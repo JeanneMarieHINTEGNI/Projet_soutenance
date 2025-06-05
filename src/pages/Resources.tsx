@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Book, FileText, Filter, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
@@ -11,127 +11,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCountry } from "@/hooks/use-country";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  tags: string[];
-  country: string[];
-  type: "article" | "video" | "document" | "webinar" | "calculator";
-  date: string;
-  image?: string;
-  featured?: boolean;
-}
-
-const resourcesData: Resource[] = [
-  {
-    id: "1",
-    title: "Guide complet des cotisations sociales au Bénin",
-    description: "Présentation détaillée des différentes cotisations sociales pour les employeurs et employés au Bénin.",
-    category: "législation",
-    tags: ["CNSS", "cotisations", "employeur"],
-    country: ["benin"],
-    type: "article",
-    date: "2025-04-15",
-    featured: true,
-  },
-  {
-    id: "2",
-    title: "Calcul de l'IRPP au Togo - Barème 2025",
-    description: "Explication du barème progressif de l'Impôt sur le Revenu des Personnes Physiques applicable au Togo en 2025.",
-    category: "fiscalité",
-    tags: ["IRPP", "impôts", "barème"],
-    country: ["togo"],
-    type: "document",
-    date: "2025-03-22",
-  },
-  {
-    id: "3",
-    title: "Comparaison des systèmes de paie Bénin vs Togo",
-    description: "Analyse comparative des obligations légales et fiscales en matière de paie entre le Bénin et le Togo.",
-    category: "comparatif",
-    tags: ["comparaison", "fiscalité", "législation"],
-    country: ["benin", "togo"],
-    type: "article",
-    date: "2025-02-10",
-    featured: true,
-  },
-  {
-    id: "4",
-    title: "Congés payés et indemnités au Bénin",
-    description: "Comment calculer correctement les indemnités de congés payés selon le code du travail béninois.",
-    category: "législation",
-    tags: ["congés", "indemnités", "code du travail"],
-    country: ["benin"],
-    type: "video",
-    date: "2025-01-18",
-  },
-  {
-    id: "5",
-    title: "Guide des avantages en nature et leur traitement fiscal au Togo",
-    description: "Traitement fiscal et social des différents avantages en nature (logement, véhicule, etc.) au Togo.",
-    category: "fiscalité",
-    tags: ["avantages", "fiscalité", "optimisation"],
-    country: ["togo"],
-    type: "document",
-    date: "2024-12-05",
-  },
-  {
-    id: "6",
-    title: "Réforme fiscale 2025 au Bénin - Impact sur la paie",
-    description: "Analyse des changements fiscaux récents au Bénin et leur impact sur le calcul des salaires.",
-    category: "actualité",
-    tags: ["réforme", "fiscalité", "2025"],
-    country: ["benin"],
-    type: "article",
-    date: "2025-05-01",
-    featured: true,
-  },
-  {
-    id: "7",
-    title: "Webinaire: Les bonnes pratiques de la paie au Togo",
-    description: "Enregistrement de notre webinaire sur les meilleures pratiques pour gérer la paie conformément à la législation togolaise.",
-    category: "formation",
-    tags: ["webinaire", "bonnes pratiques", "paie"],
-    country: ["togo"],
-    type: "webinar",
-    date: "2025-02-28",
-  },
-  {
-    id: "8",
-    title: "Calculateur d'indemnités de licenciement",
-    description: "Outil interactif pour estimer les indemnités de licenciement selon le code du travail béninois ou togolais.",
-    category: "outil",
-    tags: ["calculateur", "indemnités", "licenciement"],
-    country: ["benin", "togo"],
-    type: "calculator",
-    date: "2025-01-10",
-  },
-  {
-    id: "9",
-    title: "Guide de déclaration CNSS pour les PME au Bénin",
-    description: "Procédures et conseils pour une déclaration CNSS efficace et conforme pour les petites et moyennes entreprises.",
-    category: "législation",
-    tags: ["CNSS", "PME", "déclaration"],
-    country: ["benin"],
-    type: "document",
-    date: "2024-11-15",
-  },
-];
-
-const categories = [
-  { id: "all", name: "Tous" },
-  { id: "législation", name: "Législation" },
-  { id: "fiscalité", name: "Fiscalité" },
-  { id: "actualité", name: "Actualités" },
-  { id: "comparatif", name: "Comparatifs" },
-  { id: "formation", name: "Formation" },
-  { id: "outil", name: "Outils" },
-];
-
-const popularTags = ["CNSS", "IRPP", "congés payés", "indemnités", "réformes 2025"];
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import { z } from "zod";
+import { resourcesService } from "@/services/resources";
+import { Resource, resourcesData, categories, popularTags } from "@/data/resources";
 
 const ResourceTypeIcon = ({ type }: { type: Resource["type"] }) => {
   switch (type) {
@@ -200,6 +92,12 @@ const ResourceTypeIcon = ({ type }: { type: Resource["type"] }) => {
 };
 
 const ResourceCard = ({ resource }: { resource: Resource }) => {
+  const navigate = useNavigate();
+
+  const handleViewResource = () => {
+    navigate(`/resources/${resource.id}`);
+  };
+
   return (
     <Card className="h-full bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 overflow-hidden">
       <CardContent className="p-0">
@@ -250,7 +148,7 @@ const ResourceCard = ({ resource }: { resource: Resource }) => {
                 year: "numeric",
               })}
             </span>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleViewResource}>
               Voir plus
             </Button>
           </div>
@@ -261,6 +159,12 @@ const ResourceCard = ({ resource }: { resource: Resource }) => {
 };
 
 const FeaturedResource = ({ resource }: { resource: Resource }) => {
+  const navigate = useNavigate();
+
+  const handleReadNow = () => {
+    navigate(`/resources/${resource.id}`);
+  };
+
   return (
     <div className="relative rounded-xl overflow-hidden h-64 group">
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 z-10"></div>
@@ -292,7 +196,12 @@ const FeaturedResource = ({ resource }: { resource: Resource }) => {
         <h3 className="text-2xl font-bold text-white mb-2">{resource.title}</h3>
         <p className="text-white/80 text-sm mb-4 line-clamp-2">{resource.description}</p>
         
-        <Button variant="default" size="sm" className="bg-white text-gray-900 hover:bg-white/90">
+        <Button 
+          variant="default" 
+          size="sm" 
+          className="bg-white text-gray-900 hover:bg-white/90"
+          onClick={handleReadNow}
+        >
           Lire maintenant
         </Button>
       </div>
@@ -315,12 +224,34 @@ const DocumentCard = ({ resource }: { resource: Resource }) => {
   );
 };
 
+interface AdvancedFilters {
+  dateRange: "all" | "last-week" | "last-month" | "last-year";
+  sortBy: "date" | "title" | "relevance";
+  language: "all" | "french" | "english";
+}
+
+const emailSchema = z.string().email({
+  message: "Veuillez entrer une adresse email valide",
+});
+
 const Resources = () => {
   const { country } = useCountry();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTab, setSelectedTab] = useState<string>(country);
   const [selectedType, setSelectedType] = useState("all-types");
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    dateRange: "all",
+    sortBy: "date",
+    language: "all",
+  });
+  const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [acceptNewsletter, setAcceptNewsletter] = useState(false);
+  const [frequency, setFrequency] = useState({
+    monthly: true,
+    alerts: false,
+  });
 
   const featuredResources = resourcesData.filter(resource => resource.featured);
 
@@ -342,8 +273,60 @@ const Resources = () => {
       resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return countryMatch && categoryMatch && searchMatch && typeMatch;
+    // Advanced filters
+    let dateMatch = true;
+    if (advancedFilters.dateRange !== "all") {
+      const resourceDate = new Date(resource.date);
+      const now = new Date();
+      switch (advancedFilters.dateRange) {
+        case "last-week":
+          dateMatch = resourceDate >= new Date(now.setDate(now.getDate() - 7));
+          break;
+        case "last-month":
+          dateMatch = resourceDate >= new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case "last-year":
+          dateMatch = resourceDate >= new Date(now.setFullYear(now.getFullYear() - 1));
+          break;
+      }
+    }
+
+    return countryMatch && categoryMatch && searchMatch && typeMatch && dateMatch;
+  }).sort((a, b) => {
+    switch (advancedFilters.sortBy) {
+      case "date":
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case "title":
+        return a.title.localeCompare(b.title);
+      default:
+        return 0;
+    }
   });
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setIsSubscribing(true);
+      
+      await resourcesService.subscribeToNewsletter({
+        email,
+        frequency: {
+          monthly: frequency.monthly,
+          alerts: frequency.alerts,
+        },
+      });
+      
+      toast.success("Inscription à la newsletter réussie !");
+      setEmail("");
+      setAcceptNewsletter(false);
+      setFrequency({ monthly: true, alerts: false });
+    } catch (error) {
+      toast.error("Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   return (
     <Layout>
@@ -403,10 +386,95 @@ const Resources = () => {
                 </SelectContent>
               </Select>
               
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtres avancés
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres avancés
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Filtres avancés</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Période</Label>
+                        <RadioGroup
+                          value={advancedFilters.dateRange}
+                          onValueChange={(value: AdvancedFilters["dateRange"]) =>
+                            setAdvancedFilters((prev) => ({ ...prev, dateRange: value }))
+                          }
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="all" id="all-time" />
+                            <Label htmlFor="all-time">Tout</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="last-week" id="last-week" />
+                            <Label htmlFor="last-week">Dernière semaine</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="last-month" id="last-month" />
+                            <Label htmlFor="last-month">Dernier mois</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="last-year" id="last-year" />
+                            <Label htmlFor="last-year">Dernière année</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <div>
+                        <Label>Trier par</Label>
+                        <RadioGroup
+                          value={advancedFilters.sortBy}
+                          onValueChange={(value: AdvancedFilters["sortBy"]) =>
+                            setAdvancedFilters((prev) => ({ ...prev, sortBy: value }))
+                          }
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="date" id="sort-date" />
+                            <Label htmlFor="sort-date">Date</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="title" id="sort-title" />
+                            <Label htmlFor="sort-title">Titre</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="relevance" id="sort-relevance" />
+                            <Label htmlFor="sort-relevance">Pertinence</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <div>
+                        <Label>Langue</Label>
+                        <RadioGroup
+                          value={advancedFilters.language}
+                          onValueChange={(value: AdvancedFilters["language"]) =>
+                            setAdvancedFilters((prev) => ({ ...prev, language: value }))
+                          }
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="all" id="lang-all" />
+                            <Label htmlFor="lang-all">Toutes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="french" id="lang-french" />
+                            <Label htmlFor="lang-french">Français</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="english" id="lang-english" />
+                            <Label htmlFor="lang-english">Anglais</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
@@ -551,16 +619,38 @@ const Resources = () => {
                 <p className="text-muted-foreground mb-4">
                   Recevez nos dernières ressources et actualités juridiques directement dans votre boîte mail.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input placeholder="Votre adresse email" className="flex-1" />
-                  <Button className="bg-benin-green hover:bg-benin-green/90">S'abonner</Button>
-                </div>
-                <div className="mt-3 flex items-center space-x-2">
-                  <Checkbox id="terms" />
-                  <label htmlFor="terms" className="text-xs text-muted-foreground">
-                    J'accepte de recevoir la newsletter de PayeAfrique
-                  </label>
-                </div>
+                <form onSubmit={handleNewsletterSubmit} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="email"
+                      placeholder="Votre adresse email"
+                      className="flex-1"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      className="bg-benin-green hover:bg-benin-green/90"
+                      disabled={isSubscribing || !acceptNewsletter}
+                    >
+                      {isSubscribing ? "Inscription..." : "S'abonner"}
+                    </Button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptNewsletter}
+                      onCheckedChange={(checked) => setAcceptNewsletter(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="terms"
+                      className="text-xs text-muted-foreground cursor-pointer"
+                    >
+                      J'accepte de recevoir la newsletter de PayeAfrique
+                    </label>
+                  </div>
+                </form>
               </div>
               
               <div className="hidden md:block border-l border-gray-200 dark:border-gray-700 h-32"></div>
@@ -569,12 +659,34 @@ const Resources = () => {
                 <h4 className="font-medium mb-2">Fréquence des envois</h4>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="frequency-monthly" defaultChecked />
-                    <label htmlFor="frequency-monthly" className="text-sm">Newsletter mensuelle</label>
+                    <Checkbox
+                      id="frequency-monthly"
+                      checked={frequency.monthly}
+                      onCheckedChange={(checked) =>
+                        setFrequency((prev) => ({ ...prev, monthly: checked as boolean }))
+                      }
+                    />
+                    <label
+                      htmlFor="frequency-monthly"
+                      className="text-sm cursor-pointer"
+                    >
+                      Newsletter mensuelle
+                    </label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="frequency-alerts" />
-                    <label htmlFor="frequency-alerts" className="text-sm">Alertes légales importantes</label>
+                    <Checkbox
+                      id="frequency-alerts"
+                      checked={frequency.alerts}
+                      onCheckedChange={(checked) =>
+                        setFrequency((prev) => ({ ...prev, alerts: checked as boolean }))
+                      }
+                    />
+                    <label
+                      htmlFor="frequency-alerts"
+                      className="text-sm cursor-pointer"
+                    >
+                      Alertes légales importantes
+                    </label>
                   </div>
                 </div>
               </div>

@@ -16,6 +16,7 @@ import SimulationEnterprise from "./pages/SimulationEnterprise";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Resources from "./pages/Resources";
+import ResourceDetail from "./pages/ResourceDetail";
 import CountrySelection from "./pages/CountrySelection";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EnterpriseDashboard from "./pages/EnterpriseDashboard";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/resources" element={<Resources />} />
+              <Route path="/resources/:id" element={<ResourceDetail />} />
               <Route path="/country-selection" element={<CountrySelection />} />
               <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
               <Route path="/enterprise-dashboard" element={<EnterpriseDashboard />} />

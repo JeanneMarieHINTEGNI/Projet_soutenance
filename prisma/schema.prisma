@@ -1,0 +1,99 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  password          String
+  role              Role                @default(USER)
+  employee          Employee?
+  company           Company?
+  simulations       PayrollSimulation[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+enum Role {
+  ADMIN
+  HR_ADMIN
+  EMPLOYEE
+  USER
+}
+
+model Employee {
+  id              String           @id @default(uuid())
+  userId          String           @unique
+  user            User             @relation(fields: [userId], references: [id])
+  firstName       String
+  lastName        String
+  position        String
+  departmentId    String
+  department      Department       @relation(fields: [departmentId], references: [id])
+  grossSalary     Float
+  benefits        Json?
+  payslips        Payslip[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Department {
+  id          String      @id @default(uuid())
+  name        String
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id])
+  employees   Employee[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Company {
+  id          String       @id @default(uuid())
+  name        String
+  countryCode String
+  users       User[]
+  departments Department[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model PayrollSimulation {
+  id          String    @id @default(uuid())
+  userId      String?   // Optionnel car les visiteurs peuvent simuler
+  user        User?     @relation(fields: [userId], references: [id])
+  data        Json      // Stocke les paramètres et résultats de simulation
+  type        String    // 'individual' ou 'company'
+  createdAt   DateTime  @default(now())
+}
+
+model Payslip {
+  id          String    @id @default(uuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  month       Int
+  year        Int
+  grossSalary Float
+  netSalary   Float
+  deductions  Json
+  benefits    Json?
+  status      String    // 'draft', 'generated', 'validated'
+  pdfUrl      String?   // URL du bulletin PDF
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TaxGrid {
+  id          String    @id @default(uuid())
+  countryCode String
+  minSalary   Float
+  maxSalary   Float
+  taxRate     Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+} 

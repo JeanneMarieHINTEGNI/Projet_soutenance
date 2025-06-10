@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calculator, Download, Plus, Trash2, Users, Building, PieChart, BarChart2, HelpCircle } from "lucide-react";
+import { ArrowLeft, Calculator, Download, Plus, Trash2, Users, Building, PieChart, BarChart2, HelpCircle, Eye } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCountry } from "@/hooks/use-country";
-import { Eye } from "lucide-react";
 import { FaEye } from "react-icons/fa";
-
+import { PayrollPieChart, PayrollBarChart, PayrollLineChart, ChartDataItem } from "@/components/charts/PayrollCharts";
 
 interface Employee {
   id: string;
@@ -31,20 +29,25 @@ interface Employee {
   };
 }
 
-// Mock chart components (would use recharts in real implementation)
-const MockPieChart = ({ children }: { children?: React.ReactNode }) => (
-  <div className="bg-gray-100 dark:bg-gray-800 h-full rounded-lg flex items-center justify-center">
-    <div className="text-center text-sm text-muted-foreground">Graphique de répartition</div>
-  </div>
-);
+interface Stats {
+  totalGrossSalary: number;
+  totalBenefits: number;
+  socialContributions: number;
+  netSalaries: number;
+  totalCost: number;
+  employeeCount: number;
+}
 
-const MockBarChart = ({ data }: { data?: any[] }) => (
-  <div className="bg-gray-100 dark:bg-gray-800 h-full rounded-lg flex items-center justify-center">
-    <div className="text-center text-sm text-muted-foreground">Graphique d'analyse</div>
-  </div>
-);
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'XOF',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
+};
 
-const SimulationEnterprise = () => {
+const SimulationEnterprise: React.FC = () => {
   const navigate = useNavigate();
   const { country } = useCountry();
   const [activeTab, setActiveTab] = useState("overview");
@@ -95,7 +98,7 @@ const SimulationEnterprise = () => {
   ]);
 
   // Calculate total payroll stats
-  const calculateStats = () => {
+  const calculateStats = (): Stats => {
     const totalGrossSalary = employees.reduce((sum, emp) => sum + emp.grossSalary, 0);
     
     const totalBenefits = employees.reduce((sum, emp) => {
@@ -142,14 +145,27 @@ const SimulationEnterprise = () => {
 
   const stats = calculateStats();
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
+  // Données pour les graphiques
+  const payrollDistributionData: ChartDataItem[] = [
+    { name: 'Salaires bruts', value: stats.totalGrossSalary, color: '#4F46E5' },
+    { name: 'Charges sociales', value: stats.socialContributions, color: '#EF4444' },
+    { name: 'Avantages', value: stats.totalBenefits, color: '#F59E0B' }
+  ];
+
+  const departmentData: ChartDataItem[] = [
+    { name: 'Technique', value: 1400000, color: '#4F46E5' },
+    { name: 'Commercial', value: 650000, color: '#10B981' },
+    { name: 'RH', value: 380000, color: '#F59E0B' }
+  ];
+
+  const monthlyEvolutionData: ChartDataItem[] = [
+    { name: 'Déc', value: 2300000 },
+    { name: 'Jan', value: 2350000 },
+    { name: 'Fév', value: 2400000 },
+    { name: 'Mar', value: 2450000 },
+    { name: 'Avr', value: 2500000 },
+    { name: 'Mai', value: 2430000 }
+  ];
 
   return (
     <Layout>
@@ -185,7 +201,7 @@ const SimulationEnterprise = () => {
           </div>
         </div>
         
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">
               <PieChart className="h-4 w-4 mr-2" />
@@ -272,7 +288,7 @@ const SimulationEnterprise = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="h-72">
-                      <MockPieChart />
+                      <PayrollPieChart data={payrollDistributionData} />
                     </div>
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Analyse des coûts</h3>
@@ -284,7 +300,10 @@ const SimulationEnterprise = () => {
                             <span className="font-medium">{formatCurrency(stats.totalGrossSalary)}</span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
-                            <div className="bg-blue-500 h-full" style={{ width: `${(stats.totalGrossSalary / stats.totalCost) * 100}%` }}></div>
+                            <div 
+                              className="bg-blue-500 h-full" 
+                              style={{ width: `${(stats.totalGrossSalary / stats.totalCost) * 100}%` }}
+                            />
                           </div>
                         </div>
                         
@@ -294,7 +313,10 @@ const SimulationEnterprise = () => {
                             <span className="font-medium">{formatCurrency(stats.socialContributions)}</span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
-                            <div className="bg-red-500 h-full" style={{ width: `${(stats.socialContributions / stats.totalCost) * 100}%` }}></div>
+                            <div 
+                              className="bg-red-500 h-full" 
+                              style={{ width: `${(stats.socialContributions / stats.totalCost) * 100}%` }}
+                            />
                           </div>
                         </div>
                         
@@ -304,7 +326,10 @@ const SimulationEnterprise = () => {
                             <span className="font-medium">{formatCurrency(stats.totalBenefits)}</span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
-                            <div className="bg-amber-500 h-full" style={{ width: `${(stats.totalBenefits / stats.totalCost) * 100}%` }}></div>
+                            <div 
+                              className="bg-amber-500 h-full" 
+                              style={{ width: `${(stats.totalBenefits / stats.totalCost) * 100}%` }}
+                            />
                           </div>
                         </div>
                         
@@ -344,7 +369,7 @@ const SimulationEnterprise = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
-                    <MockBarChart />
+                    <PayrollBarChart data={departmentData} dataKey="value" nameKey="name" />
                   </div>
                   
                   <div className="mt-4 space-y-2">
@@ -382,7 +407,7 @@ const SimulationEnterprise = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
-                    <MockBarChart />
+                    <PayrollLineChart data={monthlyEvolutionData} />
                   </div>
                   
                   <div className="mt-4">
@@ -637,7 +662,7 @@ const SimulationEnterprise = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-72">
-                  <MockBarChart />
+                  <PayrollBarChart data={departmentData} dataKey="value" nameKey="name" />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
@@ -969,7 +994,7 @@ const SimulationEnterprise = () => {
                 </div>
                 
                 <div className="h-72">
-                  <MockBarChart />
+                  <PayrollLineChart data={monthlyEvolutionData} />
                 </div>
                 
                 <div className="space-y-4">

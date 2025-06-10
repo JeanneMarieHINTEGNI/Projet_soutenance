@@ -1,0 +1,205 @@
+const handleAddDepartment = () => {
+  if (!newDepartment.name.trim()) {
+    setErrors({ ...errors, departmentName: 'Le nom du département est requis' });
+    return;
+  }
+
+  const departmentExists = departments.some(
+    dept => dept.name.toLowerCase() === newDepartment.name.toLowerCase()
+  );
+
+  if (departmentExists) {
+    setErrors({ ...errors, departmentName: 'Ce département existe déjà' });
+    return;
+  }
+
+  const newDept = {
+    id: newDepartment.name.toLowerCase().replace(/\s+/g, '-'),
+    name: newDepartment.name,
+    employeeCount: 0,
+    totalSalary: 0,
+    avgSalary: 0,
+    percentageTotal: 0
+  };
+
+  setDepartments([...departments, newDept]);
+  setNewDepartment({ name: '', description: '' });
+  setShowNewDepartmentDialog(false);
+  setErrors({});
+};
+
+{/* Départements */}
+<TabsContent value="departments">
+  <div className="flex justify-between items-center mb-6">
+    <h2 className="text-2xl font-bold">Analyse par département</h2>
+    <Button onClick={() => setShowNewDepartmentDialog(true)}>
+      <Plus className="mr-2 h-4 w-4" />
+      Nouveau département
+    </Button>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {departments.map((department) => (
+      <motion.div key={department.id} variants={fadeIn}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <span>{department.name}</span>
+              <Badge variant="outline">{department.employeeCount} employés</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Masse salariale</span>
+                <span className="font-medium">{formatCurrency(department.totalSalary)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Coût moyen / employé</span>
+                <span className="font-medium">{formatCurrency(department.avgSalary)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">% de la masse salariale totale</span>
+                <span className="font-medium">{department.percentageTotal}%</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full">
+              <Calculator className="mr-2 h-4 w-4" />
+              Simuler évolution
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
+    ))}
+  </div>
+
+  {/* Modal d'ajout de département */}
+  {showNewDepartmentDialog && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+    >
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Nouveau département</CardTitle>
+          <CardDescription>
+            Créez un nouveau département dans votre organisation
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="departmentName">Nom du département</Label>
+              <Input
+                id="departmentName"
+                value={newDepartment.name}
+                onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
+                placeholder="Ex: Marketing"
+                className={errors.departmentName ? "border-red-500" : ""}
+              />
+              {errors.departmentName && (
+                <p className="text-red-500 text-sm mt-1">{errors.departmentName}</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="departmentDescription">Description (optionnelle)</Label>
+              <Input
+                id="departmentDescription"
+                value={newDepartment.description}
+                onChange={(e) => setNewDepartment({ ...newDepartment, description: e.target.value })}
+                placeholder="Description du département"
+              />
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowNewDepartmentDialog(false);
+              setNewDepartment({ name: '', description: '' });
+              setErrors({});
+            }}
+          >
+            Annuler
+          </Button>
+          <Button onClick={handleAddDepartment}>
+            Créer le département
+          </Button>
+        </CardFooter>
+      </Card>
+    </motion.div>
+  )}
+
+  {/* Reste du contenu des départements */}
+  <motion.div variants={fadeIn}>
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Analyse comparative des départements</CardTitle>
+        <CardDescription>
+          Indicateurs clés par département
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-72">
+          <DepartmentBarChart
+            data={departments.map(dept => ({
+              name: dept.name,
+              value: dept.totalSalary
+            }))}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+          <motion.div variants={fadeIn}>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Salaire moyen</h4>
+              <div className="space-y-3">
+                {departments.map(dept => (
+                  <div key={`avg-${dept.id}`} className="flex justify-between items-center">
+                    <span>{dept.name}</span>
+                    <span className="font-medium">{formatCurrency(dept.avgSalary)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div variants={fadeIn}>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Évolution annuelle</h4>
+              <div className="space-y-3">
+                {departments.map(dept => (
+                  <div key={`evolution-${dept.id}`} className="flex justify-between items-center">
+                    <span>{dept.name}</span>
+                    <Badge variant="success">+5.5%</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div variants={fadeIn}>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Impact budgétaire</h4>
+              <div className="space-y-3">
+                {departments.map(dept => (
+                  <div key={`impact-${dept.id}`} className="flex justify-between items-center">
+                    <span>{dept.name}</span>
+                    <span className="font-medium text-amber-500">
+                      {dept.percentageTotal > 30 ? 'Élevé' : dept.percentageTotal > 20 ? 'Moyen' : 'Faible'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+</TabsContent> 

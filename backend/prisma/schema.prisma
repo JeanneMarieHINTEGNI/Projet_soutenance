@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        Role     @default(EMPLOYEE)
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+  permissions Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Company {
+  id          String       @id @default(uuid())
+  name        String
+  users       User[]
+  employees   Employee[]
+  departments Department[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("companies")
+}
+
+model Employee {
+  id            String         @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String
+  position      String
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id])
+  departmentId  String
+  department    Department     @relation(fields: [departmentId], references: [id])
+  benefits      Benefit[]
+  salaryHistory SalaryHistory[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("employees")
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id])
+  employees Employee[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("departments")
+}
+
+model Benefit {
+  id          String   @id @default(uuid())
+  type        String
+  amount      Float
+  description String?
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("benefits")
+}
+
+model SalaryHistory {
+  id            String   @id @default(uuid())
+  amount        Float
+  effectiveDate DateTime
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("salary_history")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+} 

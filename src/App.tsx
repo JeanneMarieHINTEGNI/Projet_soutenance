@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Simulation from "./pages/Simulation";
 import SimulationEmployee from "./pages/SimulationEmployee";
 import SimulationEnterprise from "./pages/SimulationEnterprise";
+import OptimizationGuide from "./pages/OptimizationGuide";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Resources from "./pages/Resources";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/simulation" element={<Simulation />} />
               <Route path="/simulation/employee" element={<SimulationEmployee />} />
               <Route path="/simulation/enterprise" element={<SimulationEnterprise />} />
+              <Route path="/optimization-guide" element={<OptimizationGuide />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/resources" element={<Resources />} />

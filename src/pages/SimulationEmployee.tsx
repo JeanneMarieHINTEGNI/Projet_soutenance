@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownRight, ArrowLeft, ArrowUpRight, BarChart2, Calculator, Download, Eye, HelpCircle, Mail, Share } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -13,9 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useCountry } from "@/hooks/use-country";
+import { useEmployeeData } from "@/hooks/use-employee-data";
 
 // Mock chart components (would use recharts in real implementation)
-const PieChart = ({ children }: { children: React.ReactNode }) => (
+const PieChart = ({ children }: { children?: React.ReactNode }) => (
   <div className="bg-gray-100 dark:bg-gray-800 h-full rounded-lg flex items-center justify-center">
     <div className="text-center text-sm text-muted-foreground">Graphique de répartition</div>
   </div>
@@ -33,20 +34,145 @@ const BarChart = ({ data }: { data: any[] }) => (
   </div>
 );
 
+
+// Fonction pour calculer les charges sociales selon le pays
+const calculateSocialCharges = (grossSalary: number, country: string) => {
+  if (country === 'benin') {
+    // Au Bénin : CNSS (3.6%)
+    return Math.round(grossSalary * 0.036);
+  } else {
+    // Au Togo : CNSS/AMU (4%)
+    return Math.round(grossSalary * 0.04);
+  }
+};
+
+// Fonction pour calculer l'ITS (Bénin) ou l'IRPP (Togo)
+const calculateTax = (taxableIncome: number, familyStatus: string, children: number, country: string) => {
+  if (country === 'benin') {
+    // Au Bénin : ITS (pas de coefficient familial)
+    let tax = 0;
+    if (taxableIncome <= 60000) {
+      tax = 0;
+    } else if (taxableIncome <= 150000) {
+      tax = (taxableIncome - 60000) * 0.10;
+    } else if (taxableIncome <= 250000) {
+      tax = 9000 + (taxableIncome - 150000) * 0.15;
+    } else if (taxableIncome <= 500000) {
+      tax = 24000 + (taxableIncome - 250000) * 0.19;
+    } else {
+      tax = 71500 + (taxableIncome - 500000) * 0.30;
+    }
+    return Math.round(tax);
+  } else {
+    // Au Togo : IRPP avec coefficient familial
+    let familyCoefficient = 1;
+    if (familyStatus === "married") {
+      familyCoefficient = 2;
+    }
+    familyCoefficient += children * 0.5;
+
+    const taxableIncomePerPart = taxableIncome / familyCoefficient;
+    let tax = 0;
+
+    if (taxableIncomePerPart <= 30000) {
+      tax = 0;
+    } else if (taxableIncomePerPart <= 100000) {
+      tax = (taxableIncomePerPart - 30000) * 0.07;
+    } else if (taxableIncomePerPart <= 250000) {
+      tax = 4900 + (taxableIncomePerPart - 100000) * 0.15;
+    } else if (taxableIncomePerPart <= 500000) {
+      tax = 27400 + (taxableIncomePerPart - 250000) * 0.25;
+    } else {
+      tax = 89900 + (taxableIncomePerPart - 500000) * 0.35;
+    }
+
+    return Math.round(tax * familyCoefficient);
+  }
+};
+
+// Fonction pour calculer le salaire net
+const calculateNetSalary = (
+  grossSalary: number,
+  familyStatus: string,
+  children: number,
+  benefits: {
+    transport: number;
+    housing: number;
+    thirteenthMonth: boolean;
+  },
+  country: string
+) => {
+  // Vérification du SMIG selon le pays
+  const minSalary = country === 'togo' ? 35000 : 40000;
+  if (grossSalary < minSalary) {
+    grossSalary = minSalary;
+  }
+
+  // Calcul des charges sociales selon le pays
+  const socialCharges = calculateSocialCharges(grossSalary, country);
+  
+  // Revenu imposable (salaire brut - charges sociales)
+  const taxableIncome = grossSalary - socialCharges;
+  
+  // Calcul de l'impôt selon le pays (ITS pour Bénin, IRPP pour Togo)
+  const tax = calculateTax(taxableIncome, familyStatus, children, country);
+  
+  // Calcul du salaire net
+  const netSalary = grossSalary - socialCharges - tax;
+  
+  // Ajout des avantages non imposables
+  const totalNet = netSalary + benefits.transport + benefits.housing;
+  
+  // Ajout du 13ème mois si applicable
+  const annualBonus = benefits.thirteenthMonth ? grossSalary / 12 : 0;
+  
+  return {
+    netSalary: totalNet + annualBonus,
+    socialCharges,
+    irpp: tax, // Gardons le nom irpp pour la compatibilité avec l'interface
+    details: {
+      grossSalary,
+      taxableIncome,
+      benefits: benefits.transport + benefits.housing + annualBonus,
+      thirteenthMonth: benefits.thirteenthMonth,
+      country: country,
+      minSalary: minSalary
+    }
+  };
+};
+
 const SimulationEmployee = () => {
   const navigate = useNavigate();
   const { country } = useCountry();
+  const { employeeData, updateLastSimulation } = useEmployeeData();
+  
+  // État pour stocker les paramètres de simulation
   const [simulationType, setSimulationType] = useState("gross-to-net");
-  const [grossSalary, setGrossSalary] = useState<number>(350000);
-  const [netSalary, setNetSalary] = useState<string>("282625");
-  const [familyStatus, setFamilyStatus] = useState("single");
-  const [children, setChildren] = useState("0");
-  const [showResults, setShowResults] = useState(true);
+  const [grossSalary, setGrossSalary] = useState<number>(
+    employeeData?.currentSalary || 350000
+  );
+  const [netSalary, setNetSalary] = useState<string>(
+    employeeData?.lastSimulation?.netSalary?.toString() || "282625"
+  );
+  const [familyStatus, setFamilyStatus] = useState<"single" | "married" | "divorced">(
+    employeeData?.familyStatus || "single"
+  );
+  const [children, setChildren] = useState(
+    employeeData?.children?.toString() || "0"
+  );
+  const [showResults, setShowResults] = useState(false);
+  const [benefits, setBenefits] = useState({
+    transport: employeeData?.benefits?.transport || 0,
+    housing: employeeData?.benefits?.housing || 0,
+    thirteenthMonth: employeeData?.benefits?.thirteenthMonth || false
+  });
 
-  const handleSliderChange = (value: number[]) => {
-    setGrossSalary(value[0]);
-  };
+  // État pour stocker les détails du calcul
+  const [calculationDetails, setCalculationDetails] = useState(() => {
+    return calculateNetSalary(grossSalary, familyStatus, parseInt(children), benefits, country);
+  });
 
+  // Fonction pour formater la monnaie
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -56,40 +182,180 @@ const SimulationEmployee = () => {
     }).format(value);
   };
 
+  // Fonction pour afficher les résultats
+  const renderResults = () => {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+            <h4 className="text-sm font-medium mb-2">Salaire brut</h4>
+            <div className="text-2xl font-bold">{formatCurrency(grossSalary)}</div>
+            <div className="text-xs text-muted-foreground mt-1">Base mensuelle</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+            <h4 className="text-sm font-medium mb-2">Salaire net</h4>
+            <div className="text-2xl font-bold text-benin-green">{formatCurrency(calculationDetails.netSalary)}</div>
+            <div className="text-xs text-muted-foreground mt-1">Après impôts et charges</div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">Déductions</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>{country === 'benin' ? 'CNSS (3.6%)' : 'CNSS/AMU (4%)'}</span>
+                <span className="font-medium">-{formatCurrency(calculationDetails.socialCharges)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{country === 'benin' ? 'ITS' : 'IRPP'}</span>
+                <span className="font-medium">-{formatCurrency(calculationDetails.irpp)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">Avantages</h4>
+            <div className="space-y-2">
+              {benefits.transport > 0 && (
+                <div className="flex justify-between">
+                  <span>Prime de transport</span>
+                  <span className="font-medium">+{formatCurrency(benefits.transport)}</span>
+                </div>
+              )}
+              {benefits.housing > 0 && (
+                <div className="flex justify-between">
+                  <span>Indemnité de logement</span>
+                  <span className="font-medium">+{formatCurrency(benefits.housing)}</span>
+                </div>
+              )}
+              {benefits.thirteenthMonth && (
+                <div className="flex justify-between">
+                  <span>13ème mois (mensualité)</span>
+                  <span className="font-medium">+{formatCurrency(grossSalary / 12)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Mise à jour des calculs quand les paramètres changent
+  useEffect(() => {
+    const result = calculateNetSalary(grossSalary, familyStatus, parseInt(children), benefits, country);
+    setCalculationDetails(result);
+    
+    // Update the last simulation in the store
+    updateLastSimulation({
+      grossSalary,
+      netSalary: result.netSalary,
+      socialCharges: result.socialCharges,
+      tax: result.tax,
+      date: new Date().toISOString(),
+    });
+  }, [grossSalary, familyStatus, children, benefits, updateLastSimulation, country]);
+
+  // Ajouter un effet pour mettre à jour le titre avec le nom de l'employé
+  useEffect(() => {
+    if (employeeData) {
+      document.title = `Simulation de salaire - ${employeeData.name}`;
+    }
+  }, [employeeData]);
+
+  // Fonction pour sauvegarder la simulation et naviguer vers le tableau de bord
+  const handleSaveAndViewDashboard = () => {
+    updateLastSimulation({
+      grossSalary,
+      netSalary: calculationDetails.netSalary,
+      socialCharges: calculationDetails.socialCharges,
+      irpp: calculationDetails.irpp,
+      date: new Date().toISOString(),
+    });
+    // Force navigation to employee dashboard using window.location
+    window.location.href = '/employee-dashboard';
+  };
+
+  // Mettre à jour l'en-tête pour inclure les informations de l'employé
+  const renderHeader = () => (
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div>
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            className="mr-2"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Simulateur de Salaire</h1>
+            {employeeData && (
+              <p className="text-muted-foreground">
+                {employeeData.name} - {employeeData.position}
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="text-muted-foreground mt-2">
+          Calculez votre salaire net/brut et obtenez une analyse détaillée
+        </p>
+      </div>
+      
+      <div className="flex items-center space-x-2 mt-4 md:mt-0">
+        <span className="text-sm font-medium">Pays:</span>
+        <Select defaultValue={country}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Pays" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="benin">Bénin</SelectItem>
+            <SelectItem value="togo">Togo</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+
+  // Fonction pour gérer le changement de salaire brut
+  const handleGrossSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setGrossSalary(value);
+    
+    // Calcul automatique du net
+    const result = calculateNetSalary(value, familyStatus, parseInt(children), benefits, country);
+    setNetSalary(result.netSalary.toString());
+    setCalculationDetails(result);
+  };
+
+  // Handlers pour les avantages
+  const handleTransportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setBenefits(prev => ({ ...prev, transport: value }));
+  };
+
+  const handleHousingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setBenefits(prev => ({ ...prev, housing: value }));
+  };
+
+  const handleThirteenthMonthChange = (checked: boolean) => {
+    setBenefits(prev => ({ ...prev, thirteenthMonth: checked }));
+  };
+
+  // Handler pour le calcul
+  const handleCalculate = () => {
+    const result = calculateNetSalary(grossSalary, familyStatus, parseInt(children), benefits, country);
+    setCalculationDetails(result);
+    setShowResults(true);
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <div className="flex items-center">
-                <Button 
-                  variant="ghost" 
-                  className="mr-2"
-                  onClick={() => navigate(-1)}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <h1 className="text-3xl font-bold">Simulateur de Salaire</h1>
-              </div>
-              <p className="text-muted-foreground">
-                Calculez votre salaire net/brut et obtenez une analyse détaillée
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-2 mt-4 md:mt-0">
-              <span className="text-sm font-medium">Pays:</span>
-              <Select defaultValue={country}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Pays" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="benin">Bénin</SelectItem>
-                  <SelectItem value="togo">Togo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {renderHeader()}
           
           {/* Onglets de type de simulation */}
           <Tabs defaultValue="gross-to-net" className="mb-8" onValueChange={setSimulationType}>
@@ -123,37 +389,39 @@ const SimulationEmployee = () => {
                     <CardContent className="space-y-6">
                       <div>
                         <h3 className="text-sm font-medium mb-4">Salaire brut mensuel</h3>
-                        
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                           <div className="flex justify-between">
                             <Label htmlFor="gross-salary">Montant</Label>
                             <span className="font-medium text-benin-green">{formatCurrency(grossSalary)}</span>
                           </div>
                           
-                          <Slider
-                            id="gross-salary"
-                            value={[grossSalary]}
-                            min={50000}
-                            max={2000000}
-                            step={10000}
-                            onValueChange={handleSliderChange}
-                            className="my-4"
-                          />
-                          
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>SMIG (52K)</span>
-                            <span>Moyen (250K)</span>
-                            <span>Élevé (1M)</span>
-                          </div>
-                          
-                          <div className="flex items-center mt-2">
+                          <div className="flex items-center space-x-2">
                             <Input
+                              id="gross-salary"
                               type="number"
-                              className="w-32 mr-2"
                               value={grossSalary}
-                              onChange={(e) => setGrossSalary(Number(e.target.value))}
+                              onChange={handleGrossSalaryChange}
+                              className="flex-1"
+                              min={50000}
+                              max={2000000}
+                              step={1000}
                             />
-                            <span className="text-sm text-muted-foreground">FCFA / mois</span>
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">FCFA / mois</span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground text-center">
+                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                              <div>SMIG</div>
+                              <div className="font-medium">52 000 FCFA</div>
+                            </div>
+                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                              <div>Moyen</div>
+                              <div className="font-medium">250 000 FCFA</div>
+                            </div>
+                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                              <div>Élevé</div>
+                              <div className="font-medium">1 000 000 FCFA</div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -167,7 +435,10 @@ const SimulationEmployee = () => {
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="family-status">Situation familiale</Label>
-                            <Select defaultValue={familyStatus} onValueChange={setFamilyStatus}>
+                            <Select 
+                              defaultValue={familyStatus} 
+                              onValueChange={(value: "single" | "married" | "divorced") => setFamilyStatus(value)}
+                            >
                               <SelectTrigger className="mt-1">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
@@ -210,7 +481,13 @@ const SimulationEmployee = () => {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <Checkbox id="transport-allowance" />
+                              <Checkbox 
+                                id="transport-allowance" 
+                                checked={benefits.transport > 0}
+                                onCheckedChange={(checked) => {
+                                  if (!checked) setBenefits(prev => ({ ...prev, transport: 0 }));
+                                }}
+                              />
                               <label htmlFor="transport-allowance" className="ml-2 text-sm">
                                 Prime de transport
                               </label>
@@ -219,12 +496,21 @@ const SimulationEmployee = () => {
                               type="number"
                               placeholder="Montant"
                               className="w-24 h-8 text-sm"
+                              value={benefits.transport || ''}
+                              onChange={handleTransportChange}
+                              disabled={benefits.transport === 0}
                             />
                           </div>
                           
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <Checkbox id="housing-allowance" />
+                              <Checkbox 
+                                id="housing-allowance" 
+                                checked={benefits.housing > 0}
+                                onCheckedChange={(checked) => {
+                                  if (!checked) setBenefits(prev => ({ ...prev, housing: 0 }));
+                                }}
+                              />
                               <label htmlFor="housing-allowance" className="ml-2 text-sm">
                                 Indemnité de logement
                               </label>
@@ -233,12 +519,19 @@ const SimulationEmployee = () => {
                               type="number"
                               placeholder="Montant"
                               className="w-24 h-8 text-sm"
+                              value={benefits.housing || ''}
+                              onChange={handleHousingChange}
+                              disabled={benefits.housing === 0}
                             />
                           </div>
                           
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <Checkbox id="thirteenth-month" />
+                              <Checkbox 
+                                id="thirteenth-month"
+                                checked={benefits.thirteenthMonth}
+                                onCheckedChange={handleThirteenthMonthChange}
+                              />
                               <label htmlFor="thirteenth-month" className="ml-2 text-sm">
                                 13ème mois
                               </label>
@@ -252,7 +545,7 @@ const SimulationEmployee = () => {
                       
                       <Button 
                         className="w-full bg-benin-green hover:bg-benin-green/90"
-                        onClick={() => setShowResults(true)}
+                        onClick={handleCalculate}
                       >
                         <Calculator className="mr-2 h-4 w-4" />
                         Calculer le salaire net
@@ -276,70 +569,7 @@ const SimulationEmployee = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Résumé des résultats - côté gauche */}
                             <div className="space-y-6">
-                              <div className="text-center p-6 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Salaire net mensuel</h3>
-                                <div className="text-4xl font-bold text-benin-green">282 625 FCFA</div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Soit 80.75% du brut
-                                </p>
-                              </div>
-                              
-                              <div className="space-y-4">
-                                {/* Breakdown - salaire brut vers net */}
-                                <div className="bg-white dark:bg-gray-800 border rounded-lg p-4">
-                                  <div className="flex justify-between mb-2">
-                                    <span className="font-medium">Salaire brut mensuel</span>
-                                    <span className="font-medium">350 000 FCFA</span>
-                                  </div>
-                                  <div className="flex justify-between text-sm text-red-500">
-                                    <span>Cotisations sociales (3.6%)</span>
-                                    <span>- 12 600 FCFA</span>
-                                  </div>
-                                  <div className="flex justify-between text-sm text-red-500">
-                                    <span>IRPP</span>
-                                    <span>- 54 775 FCFA</span>
-                                  </div>
-                                  <Separator className="my-2" />
-                                  <div className="flex justify-between font-medium">
-                                    <span>Salaire net mensuel</span>
-                                    <span className="text-benin-green">282 625 FCFA</span>
-                                  </div>
-                                </div>
-                                
-                                {/* Projection annuelle */}
-                                <div className="bg-white dark:bg-gray-800 border rounded-lg p-4">
-                                  <h3 className="font-medium mb-2">Projection annuelle</h3>
-                                  <div className="flex justify-between text-sm">
-                                    <span>Net annuel (12 mois)</span>
-                                    <span>3 391 500 FCFA</span>
-                                  </div>
-                                  <div className="flex justify-between text-sm text-green-500">
-                                    <span>13ème mois (si applicable)</span>
-                                    <span>+ 282 625 FCFA</span>
-                                  </div>
-                                  <Separator className="my-2" />
-                                  <div className="flex justify-between font-medium">
-                                    <span>Total annuel estimé</span>
-                                    <span>3 674 125 FCFA</span>
-                                  </div>
-                                </div>
-                                
-                                {/* Actions */}
-                                <div className="flex gap-2">
-                                  <Button variant="outline" className="flex-1">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    PDF
-                                  </Button>
-                                  <Button variant="outline" className="flex-1">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Email
-                                  </Button>
-                                  <Button variant="outline" className="flex-1">
-                                    <Share className="h-4 w-4 mr-2" />
-                                    Partager
-                                  </Button>
-                                </div>
-                              </div>
+                              {renderResults()}
                             </div>
                             
                             {/* Visualisations - côté droit */}
@@ -619,7 +849,10 @@ const SimulationEmployee = () => {
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="family-status">Situation familiale</Label>
-                            <Select defaultValue={familyStatus} onValueChange={setFamilyStatus}>
+                            <Select 
+                              defaultValue={familyStatus} 
+                              onValueChange={(value: "single" | "married" | "divorced") => setFamilyStatus(value)}
+                            >
                               <SelectTrigger className="mt-1">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
@@ -937,6 +1170,21 @@ const SimulationEmployee = () => {
               </div>
             </TabsContent>
           </Tabs>
+          
+          {/* Add a button to save and view dashboard */}
+          <div className="mt-8 flex justify-end space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/simulation/employee')}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSaveAndViewDashboard}
+            >
+              Sauvegarder et voir le tableau de bord
+            </Button>
+          </div>
         </div>
       </div>
     </Layout>

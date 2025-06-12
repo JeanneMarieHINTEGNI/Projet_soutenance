@@ -1,5 +1,5 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCountry } from "@/hooks/use-country";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   BarChart,
   Bar,
@@ -43,8 +46,12 @@ import {
   Share2,
   Target,
   TrendingUp,
-  User as UserIcon
+  User as UserIcon,
+  AlertCircle
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
+import { useEmployeeData } from "@/hooks/use-employee-data";
 
 // Sample data for the dashboard
 const salaryHistoryData = [
@@ -74,10 +81,171 @@ const mockLeavesData = [
   { type: "Congé maladie", start: "15/02/2025", end: "17/02/2025", days: 3, status: "justified" }
 ];
 
+// Add new LeaveRequest type
+interface LeaveRequest {
+  type: string;
+  startDate: Date;
+  endDate: Date;
+  reason: string;
+}
+
+// Add new function to calculate business days between two dates
+const getBusinessDays = (startDate: Date, endDate: Date) => {
+  let count = 0;
+  const curDate = new Date(startDate.getTime());
+  while (curDate <= endDate) {
+    const dayOfWeek = curDate.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+    curDate.setDate(curDate.getDate() + 1);
+  }
+  return count;
+};
+
 const EmployeeDashboard = () => {
+  const navigate = useNavigate();
   const { country } = useCountry();
+  const { employeeData } = useEmployeeData();
   const [salaryView, setSalaryView] = useState<string>("net");
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [leaveRequest, setLeaveRequest] = useState<LeaveRequest>({
+    type: "annual",
+    startDate: new Date(),
+    endDate: new Date(),
+    reason: ""
+  });
   const currencySymbol = "FCFA";
+  
+  // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Add error state
+  const [error, setError] = useState<string | null>(null);
+
+  // Add function to handle leave request submission
+  const handleLeaveRequest = () => {
+    const days = getBusinessDays(leaveRequest.startDate, leaveRequest.endDate);
+    if (days <= 0) {
+      toast({
+        title: "Erreur",
+        description: "La date de fin doit être après la date de début",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (days > 14) { // Current available days
+      toast({
+        title: "Erreur",
+        description: "Vous n'avez pas assez de jours de congés disponibles",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Simulate API call
+    setTimeout(() => {
+      toast({
+        title: "Demande envoyée",
+        description: `Votre demande de ${days} jours de congés a été envoyée pour approbation.`,
+      });
+      setShowLeaveDialog(false);
+    }, 1000);
+  };
+
+  // Add LeaveRequestDialog component
+  const LeaveRequestDialog = () => (
+    <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Nouvelle demande de congés</DialogTitle>
+          <DialogDescription>
+            Remplissez le formulaire ci-dessous pour soumettre votre demande de congés.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="leave-type" className="text-right">
+              Type
+            </Label>
+            <Select
+              value={leaveRequest.type}
+              onValueChange={(value) => setLeaveRequest({ ...leaveRequest, type: value })}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Type de congé" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="annual">Congés annuels</SelectItem>
+                <SelectItem value="sick">Congé maladie</SelectItem>
+                <SelectItem value="special">Congé spécial</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Période</Label>
+            <div className="col-span-3">
+              <div className="flex flex-col gap-2">
+                <CalendarComponent
+                  mode="range"
+                  selected={{
+                    from: leaveRequest.startDate,
+                    to: leaveRequest.endDate
+                  }}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      setLeaveRequest({
+                        ...leaveRequest,
+                        startDate: range.from,
+                        endDate: range.to
+                      });
+                    }
+                  }}
+                  locale={fr}
+                  disabled={(date) => {
+                    const day = date.getDay();
+                    return day === 0 || day === 6;
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="reason" className="text-right">
+              Motif
+            </Label>
+            <Input
+              id="reason"
+              className="col-span-3"
+              value={leaveRequest.reason}
+              onChange={(e) => setLeaveRequest({ ...leaveRequest, reason: e.target.value })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowLeaveDialog(false)}>
+            Annuler
+          </Button>
+          <Button onClick={handleLeaveRequest}>Soumettre la demande</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Add function to handle document download
+  const handleDownload = (documentName: string) => {
+    toast({
+      title: "Téléchargement démarré",
+      description: `Le document "${documentName}" va être téléchargé.`
+    });
+  };
+
+  // Add function to handle document preview
+  const handlePreview = (documentName: string) => {
+    toast({
+      title: "Aperçu du document",
+      description: `L'aperçu de "${documentName}" va s'ouvrir dans un nouvel onglet.`
+    });
+  };
   
   // Format currency for display
   const formatCurrency = (value: number | string) => {
@@ -85,47 +253,207 @@ const EmployeeDashboard = () => {
     return `${numValue.toLocaleString()} ${currencySymbol}`;
   };
 
+  const handleSimulateSalary = () => {
+    navigate('/simulation/employee');
+  };
+
+  const handleViewAllDocuments = () => {
+    toast({
+      title: "Documents",
+      description: "La section des documents va s'ouvrir dans un nouvel onglet.",
+    });
+  };
+
+  const handleViewEmployeeDetails = () => {
+    toast({
+      title: "Détails de l'employé",
+      description: "Les détails complets vont s'ouvrir dans un nouvel onglet.",
+    });
+  };
+
+  const handleViewLeaveDetails = () => {
+    toast({
+      title: "Détails des congés",
+      description: "Les détails des congés vont s'ouvrir dans un nouvel onglet.",
+    });
+  };
+
+  const handleDownloadAll = () => {
+    toast({
+      title: "Téléchargement groupé",
+      description: "Le téléchargement de tous les documents va démarrer.",
+    });
+  };
+
+  const handleNewLeaveRequest = () => {
+    setShowLeaveDialog(true);
+    toast({
+      title: "Nouvelle demande de congés",
+      description: "Le formulaire de demande de congés est maintenant ouvert.",
+    });
+  };
+
+  const handleViewPayslip = (month: string) => {
+    toast({
+      title: "Bulletin de paie",
+      description: `Le bulletin de paie de ${month} va s'ouvrir dans un nouvel onglet.`,
+    });
+  };
+
+  const handleViewContract = (documentName: string) => {
+    toast({
+      title: "Visualisation de document",
+      description: `Le document "${documentName}" va s'ouvrir dans un nouvel onglet.`,
+    });
+  };
+
+  const handleViewCertificate = (documentName: string) => {
+    toast({
+      title: "Visualisation du certificat",
+      description: `Le certificat "${documentName}" va s'ouvrir dans un nouvel onglet.`,
+    });
+  };
+
+  const handleDownloadDocument = (documentName: string) => {
+    toast({
+      title: "Téléchargement",
+      description: `Le document "${documentName}" va être téléchargé.`,
+    });
+  };
+
+  useEffect(() => {
+    // Simulate data loading and check for employee data
+    const timer = setTimeout(() => {
+        setIsLoading(false);
+      if (!employeeData) {
+        setError("Aucune donnée employé trouvée. Veuillez d'abord effectuer une simulation.");
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [employeeData]);
+
+  // Redirect to simulation if no employee data and not loading
+  useEffect(() => {
+    if (!isLoading && !employeeData) {
+      navigate('/simulation/employee');
+    }
+  }, [isLoading, employeeData, navigate]);
+
+  if (error) {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <Button onClick={() => navigate('/simulation/employee')}>
+              Aller à la page de simulation
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        ) : employeeData ? (
+          <>
+            {/* Employee Overview Card */}
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl">{employeeData.name}</CardTitle>
+                    <CardDescription>{employeeData.position}</CardDescription>
+                  </div>
+                  <Button onClick={handleSimulateSalary}>
+                    <Calculator className="mr-2 h-4 w-4" />
+                    Nouvelle simulation
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Dernier salaire brut
+                      </CardTitle>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(employeeData.lastSimulation?.grossSalary || employeeData.currentSalary)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Dernier salaire net
+                      </CardTitle>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(employeeData.lastSimulation?.netSalary || 0)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  {/* Add more cards for other metrics */}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rest of the dashboard content */}
         <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
-          {/* Employee Profile Card */}
-          <div className="w-full md:w-64 flex flex-col items-center bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+              {/* Employee Profile Card - Updated with dark mode support */}
+              <div className="w-full md:w-64 flex flex-col items-center bg-card text-card-foreground rounded-lg p-6 shadow-sm transition-colors duration-200">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                <UserIcon className="h-12 w-12 text-gray-400" />
+                  <div className="w-20 h-20 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                    <UserIcon className="h-12 w-12 text-muted-foreground" />
               </div>
-              <div className="absolute bottom-0 right-0 h-5 w-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                  <div className="absolute bottom-0 right-0 h-5 w-5 bg-green-500 rounded-full border-2 border-background"></div>
             </div>
             
             <h2 className="mt-4 text-xl font-bold">Simon Adoko</h2>
             <p className="text-sm text-muted-foreground">Développeur Front-end</p>
             <Badge className="mt-2" variant="outline">Tech</Badge>
             
-            <div className="w-full mt-4 pt-4 border-t">
+                <div className="w-full mt-4 pt-4 border-t border-border">
               <div className="text-sm text-muted-foreground">Chez TechnoBénin depuis:</div>
               <div className="font-medium">2 ans et 4 mois</div>
             </div>
             
-            <Button className="w-full mt-4">
+                <Button className="w-full mt-4" variant="default" onClick={handleSimulateSalary}>
               <Calculator className="mr-2 h-4 w-4" />
               Simuler mon salaire
             </Button>
           </div>
           
-          {/* Main Content Area */}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-6">Tableau de bord</h1>
+              {/* Main Content Area - Updated with dark mode support */}
+              <div className="flex-1 space-y-6">
+                <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Salary KPI */}
-              <Card>
+                  {/* Salary KPI - Updated with dark mode support */}
+                  <Card className="bg-card">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Salaire net</CardTitle>
                   <CardDescription>Mai 2025</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">265 000 FCFA</div>
+                      <div className="text-2xl font-bold text-foreground">265 000 FCFA</div>
                   <div className="flex items-center mt-1 text-xs">
                     <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
                     <span className="text-green-500 font-medium">+5.2%</span>
@@ -233,16 +561,21 @@ const EmployeeDashboard = () => {
                         <div className="text-xs text-muted-foreground">Émis le {doc.date}</div>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc.name)}>
                       <Download className="h-4 w-4" />
                     </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleViewCertificate(doc.name)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                   </div>
                 ))}
               </div>
               
-              <Button variant="outline" className="w-full mt-4">
-                <FolderOpen className="mr-2 h-4 w-4" />
-                Tous mes documents
+                  <Button variant="outline" className="w-full mt-4" onClick={handleDownloadAll}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Tout télécharger
               </Button>
             </CardContent>
           </Card>
@@ -281,9 +614,9 @@ const EmployeeDashboard = () => {
                   </div>
                 </div>
                 
-                <Button className="w-full mt-2">
+                    <Button onClick={handleNewLeaveRequest}>
                   <Calendar className="mr-2 h-4 w-4" />
-                  Demander un congé
+                      Nouvelle demande
                 </Button>
               </div>
             </CardContent>
@@ -407,7 +740,7 @@ const EmployeeDashboard = () => {
                             <SelectItem value="2023">2023</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button variant="outline">
+                            <Button variant="outline" onClick={handleDownloadAll}>
                           <Download className="mr-2 h-4 w-4" />
                           Tout télécharger
                         </Button>
@@ -429,11 +762,7 @@ const EmployeeDashboard = () => {
                             Émis le 28/{month === 'Janvier' ? '01' : month === 'Février' ? '02' : month === 'Mars' ? '03' : month === 'Avril' ? '04' : '05'}/2025
                           </div>
                           <div className="flex justify-between">
-                            <Button variant="ghost" size="sm" className="text-xs">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Voir
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-xs">
+                                <Button variant="ghost" size="sm" className="text-xs" onClick={() => handleViewPayslip(month)}>
                               <Download className="h-3 w-3 mr-1" />
                               Télécharger
                             </Button>
@@ -472,8 +801,12 @@ const EmployeeDashboard = () => {
                           <TableCell>PDF</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Attestation de travail")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Attestation de travail")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -484,8 +817,12 @@ const EmployeeDashboard = () => {
                           <TableCell>PDF</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Attestation fiscale 2024")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Attestation fiscale 2024")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -496,8 +833,12 @@ const EmployeeDashboard = () => {
                           <TableCell>PDF</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Certificat de formation React")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Certificat de formation React")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -532,8 +873,12 @@ const EmployeeDashboard = () => {
                           <TableCell>CDI</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Contrat de travail initial")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Contrat de travail initial")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -543,8 +888,12 @@ const EmployeeDashboard = () => {
                           <TableCell>Modification</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Avenant - Promotion")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Avenant - Promotion")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -554,8 +903,12 @@ const EmployeeDashboard = () => {
                           <TableCell>Modification</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument("Avenant - Augmentation")}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleViewCertificate("Avenant - Augmentation")}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -772,7 +1125,7 @@ const EmployeeDashboard = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => handleViewEmployeeDetails()}>
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -811,7 +1164,12 @@ const EmployeeDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+          </>
+        ) : null}
       </div>
+      
+      {/* Add LeaveRequestDialog */}
+      <LeaveRequestDialog />
     </Layout>
   );
 };

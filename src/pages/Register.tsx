@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useCountry } from "@/hooks/use-country";
 import { useAuth } from "@/hooks/use-auth";
+import { motion } from "framer-motion";
+import { ArrowLeft, Check } from "lucide-react";
 
 // Schéma de validation pour l'étape 1
 const step1Schema = z.object({
@@ -134,34 +136,52 @@ const Register = () => {
 
   return (
     <Layout>
-      <div className="container max-w-md mx-auto px-4 py-8">
-        <div className="space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold font-heading">Créer un compte</h1>
-            <p className="text-muted-foreground mt-2">
-              Rejoignez PayeAfrique pour gérer efficacement vos salaires au {country === 'benin' ? 'Bénin' : 'Togo'}
-            </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour à l'accueil
+          </Link>
           </div>
 
-          <div className="flex items-center gap-2 justify-center">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full ${
-                  step >= i ? "bg-benin-green" : "bg-gray-300"
-                }`}
-              />
-            ))}
-          </div>
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+          >
+            <div>
+              <h1 className="text-4xl font-bold mb-6">Créer un compte</h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Commencez à gérer votre paie efficacement avec PayeAfrique.
+              </p>
 
-          {error && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">
-              {error}
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-benin-green/10 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-benin-green" />
+                  </div>
+                  <p className="text-gray-600">Essai gratuit de 14 jours</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-benin-green/10 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-benin-green" />
+                  </div>
+                  <p className="text-gray-600">Pas de carte bancaire requise</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-benin-green/10 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-benin-green" />
+                  </div>
+                  <p className="text-gray-600">Support technique inclus</p>
+                </div>
+          </div>
             </div>
-          )}
 
+            <div className="bg-white rounded-xl shadow-lg p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {step === 1 && (
                 <>
                   <FormField
@@ -374,6 +394,8 @@ const Register = () => {
               </Link>
             </p>
           </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </Layout>

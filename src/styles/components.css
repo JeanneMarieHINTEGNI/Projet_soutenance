@@ -1,0 +1,85 @@
+/* Animation keyframes */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes float-slow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes float-reverse {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(20px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Utility classes */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-benin-green text-white px-6 py-3 rounded-lg font-medium 
+         flex items-center justify-center transition-all duration-300
+         hover:bg-benin-green/90 hover:shadow-lg;
+}
+
+.btn-secondary {
+  @apply bg-white/10 backdrop-blur-sm text-white px-6 py-3 rounded-lg 
+         font-medium flex items-center justify-center transition-all duration-300
+         hover:bg-white/20;
+}
+
+.btn-primary-sm {
+  @apply bg-benin-green text-white px-4 py-2 rounded-lg text-sm font-medium 
+         flex items-center justify-center transition-all duration-300
+         hover:bg-benin-green/90;
+}
+
+/* Feature card styles */
+.feature-card {
+  @apply bg-white p-6 rounded-xl shadow-lg transition-all duration-300
+         hover:shadow-xl border border-gray-100;
+}
+
+.feature-icon {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center mb-4
+         transition-all duration-300;
+}
+
+/* Country badge styles */
+.country-badge {
+  @apply absolute top-4 right-4 bg-white/10 backdrop-blur-sm
+         px-4 py-2 rounded-full flex items-center gap-2;
+}
+
+.country-badge .flag {
+  @apply text-xl;
+}
+
+.country-badge .name {
+  @apply text-sm font-medium text-white;
+}
+
+/* Responsive container */
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Section padding */
+.section-padding {
+  @apply py-16 sm:py-20 lg:py-24;
+} 

@@ -1,21 +1,109 @@
 // src/pages/Contact.tsx
-import Layout from "@/components/layout/Layout"; // Assurez-vous que le chemin vers votre Layout est correct
+import { motion } from "framer-motion";
+import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Textarea } from "@/components/ui/textarea";
 
 const Contact = () => {
   return (
     <Layout>
-      <div className="container mx-auto py-20 text-center">
-        <h1 className="text-4xl font-bold mb-4">Nous Contacter</h1>
-        <p className="text-lg text-gray-700 dark:text-gray-300">
-          Vous avez des questions ? N'hésitez pas à nous envoyer un message.
-        </p>
-        {/* Vous pouvez ajouter un formulaire de contact ici plus tard */}
-        <div className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md max-w-md mx-auto">
-          <p className="text-xl font-semibold mb-4">Informations de contact :</p>
-          <p className="text-gray-800 dark:text-gray-200">Email : <a href="mailto:contact@payeafrique.com" className="text-benin-green hover:underline">contact@payeafrique.com</a></p>
-          <p className="text-gray-800 dark:text-gray-200">Téléphone : +229 97 XX XX XX</p>
-          <p className="text-gray-800 dark:text-gray-200">Adresse : Rue de l'innovation, Cotonou, Bénin</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour à l'accueil
+          </Link>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-5xl mx-auto"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <h1 className="text-4xl font-bold mb-6">Contactez-nous</h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Notre équipe est là pour répondre à toutes vos questions.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                    <Mail className="h-5 w-5 text-benin-green" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">Email</h3>
+                    <p className="text-gray-600">contact@payeafrique.com</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                    <Phone className="h-5 w-5 text-benin-green" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">Téléphone</h3>
+                    <p className="text-gray-600">+229 XX XX XX XX</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                    <MapPin className="h-5 w-5 text-benin-green" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">Adresse</h3>
+                    <p className="text-gray-600">
+                      Cotonou, Bénin<br />
+                      Quartier XX, Rue XX
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-6">Envoyez-nous un message</h2>
+              <form className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nom
+                    </label>
+                    <Input type="text" placeholder="Votre nom" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <Input type="email" placeholder="votre@email.com" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sujet
+                  </label>
+                  <Input type="text" placeholder="Sujet de votre message" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <Textarea 
+                    placeholder="Votre message..." 
+                    className="min-h-[150px]"
+                  />
+                </div>
+                <Button className="w-full">Envoyer le message</Button>
+              </form>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </Layout>
   );

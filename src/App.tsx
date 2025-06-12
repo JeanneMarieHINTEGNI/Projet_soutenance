@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/hooks/use-theme";
+import { ThemeProvider } from "@/components/theme-provider";
 import { CountryProvider } from "@/hooks/use-country";
 
 // Importez votre composant Chatbot ici
@@ -22,19 +22,16 @@ import CountrySelection from "./pages/CountrySelection";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EnterpriseDashboard from "./pages/EnterpriseDashboard";
 import NotFound from "./pages/NotFound";
-
-// Ajoutez les imports pour les pages About et Contact
-import About from "./pages/About";    // Assurez-vous que ce fichier existe
-import Contact from "./pages/Contact"; // Assurez-vous que ce fichier existe
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import PrivateRoute from '@/components/PrivateRoute';
-
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <CountryProvider>
+    <ThemeProvider defaultTheme="system" storageKey="paye-afrique-ui-theme">
+      <CountryProvider defaultCountry="benin">
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -52,8 +49,6 @@ const App = () => (
               <Route path="/country-selection" element={<CountrySelection />} />
               <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
               <Route path="/enterprise-dashboard" element={<EnterpriseDashboard />} />
-              
-              {/* NOUVELLES ROUTES AJOUTÉES POUR /about ET /contact */}
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               
@@ -67,11 +62,10 @@ const App = () => (
                 }
               />
               
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              {/* Route par défaut pour les pages non trouvées */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
-          {/* PLACEZ LE COMPOSANT CHATBOT ICI */}
           <Chatbot />
         </TooltipProvider>
       </CountryProvider>

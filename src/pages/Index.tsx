@@ -1,650 +1,634 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { ArrowRight, Check, BarChart3, Shield, Clock, Calculator, Star, Play, ArrowLeft } from "lucide-react";
+import { useState, useRef, ReactNode } from "react";
+import { motion, useInView } from "framer-motion";
+import {
+  ArrowRight,
+  Check,
+  BarChart3,
+  Shield,
+  Clock,
+  Calculator,
+  ChevronRight,
+  Users,
+  Building,
+  Sparkles,
+  Globe,
+  ArrowUpRight,
+  Play,
+  LineChart,
+  PieChart,
+  UserCircle,
+  Calendar,
+  DollarSign,
+  Settings,
+  FileText
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import Layout from "@/components/layout/Layout";
 import { useCountry } from "@/hooks/use-country";
-import { Input } from "@/components/ui/input";
-import { calculateCNSS, calculateImpot } from "@/constants/tax";
+
+interface FadeInWhenVisibleProps {
+  children: ReactNode;
+  delay?: number;
+}
+
+const FadeInWhenVisible = ({ children, delay = 0 }: FadeInWhenVisibleProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+      transition={{ duration: 0.8, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const DashboardPreview = () => {
+  const { country } = useCountry();
+
+  return (
+    <div className="relative bg-white/80 dark:bg-gray-900/50 backdrop-blur-lg rounded-xl p-6 shadow-2xl transition-all duration-300">
+      <div className="grid grid-cols-12 gap-4">
+        {/* Sidebar */}
+        <div className="col-span-3 bg-gray-100/80 dark:bg-gray-900/80 rounded-lg p-4 transition-all duration-300">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-gray-900 dark:text-white/90 p-2 bg-benin-green/10 dark:bg-benin-green/20 rounded-lg transition-all duration-300">
+              <LineChart className="h-5 w-5" />
+              <span className="text-sm font-medium">Dashboard</span>
+            </div>
+            {[
+              { icon: <Users className="h-5 w-5" />, label: "Employés" },
+              { icon: <Calendar className="h-5 w-5" />, label: "Présence" },
+              { icon: <DollarSign className="h-5 w-5" />, label: "Paie" },
+              { icon: <PieChart className="h-5 w-5" />, label: "Rapports" }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-white/60 p-2 hover:bg-gray-200/50 dark:hover:bg-white/5 rounded-lg cursor-pointer transition-all duration-300">
+                {item.icon}
+                <span className="text-sm">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="col-span-9 space-y-4">
+          {/* Header */}
+          <div className="flex justify-between items-center bg-gray-100/50 dark:bg-gray-900/30 rounded-lg p-4 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-benin-green/10 dark:bg-benin-green/20 flex items-center justify-center transition-all duration-300">
+                <UserCircle className="h-5 w-5 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <h3 className="text-gray-900 dark:text-white text-sm font-medium transition-colors duration-300">Entreprise SARL</h3>
+                <p className="text-gray-600 dark:text-white/60 text-xs transition-colors duration-300">Dashboard principal</p>
+              </div>
+            </div>
+            <Button size="sm" variant="ghost" className="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors duration-300">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Employés actifs", value: "124", icon: <Users className="h-4 w-4" />, color: "bg-blue-500/20" },
+              { label: "Masse salariale", value: "12.4M", icon: <DollarSign className="h-4 w-4" />, color: "bg-green-500/20" },
+              { label: "Bulletins", value: "372", icon: <FileText className="h-4 w-4" />, color: "bg-purple-500/20" }
+            ].map((stat, index) => (
+              <div key={index} className="bg-gray-100/50 dark:bg-gray-900/30 rounded-lg p-4 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-6 h-6 rounded-full ${stat.color} flex items-center justify-center text-gray-900 dark:text-white transition-colors duration-300`}>
+                    {stat.icon}
+                  </div>
+                  <span className="text-gray-600 dark:text-white/60 text-xs transition-colors duration-300">{stat.label}</span>
+                </div>
+                <p className="text-gray-900 dark:text-white text-lg font-semibold transition-colors duration-300">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart Preview */}
+          <div className="bg-gray-100/50 dark:bg-gray-900/30 rounded-lg p-4 transition-all duration-300">
+            <div className="h-32 flex items-end justify-between gap-2">
+              {[40, 65, 45, 75, 55, 80, 60].map((height, index) => (
+                <div key={index} className="w-full">
+                  <div 
+                    className="bg-benin-green/20 dark:bg-benin-green/40 rounded-t-sm transition-all duration-300" 
+                    style={{ height: `${height}%` }}
+                  ></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Country Badge */}
+      <div className="absolute -top-4 -right-4 bg-benin-green text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-all duration-300">
+        {country === "benin" ? (
+          <>
+            <span className="text-lg">🇧🇯</span>
+            <span>Bénin</span>
+          </>
+        ) : (
+          <>
+            <span className="text-lg">🇹🇬</span>
+            <span>Togo</span>
+          </>
+        )}
+      </div>
+
+      {/* Feature Badge */}
+      <motion.div 
+        className="absolute -bottom-4 -right-4 bg-gradient-to-r from-violet-600 to-blue-500 text-white px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm border border-white/20 transition-all duration-300"
+        whileHover={{ scale: 1.05, rotate: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          duration: 0.6,
+          delay: 1,
+          scale: {
+            type: "spring",
+            stiffness: 300
+          }
+        }}
+      >
+        <div className="relative">
+          <Sparkles className="h-5 w-5 animate-pulse" />
+          <motion.div
+            className="absolute -inset-1 bg-white/20 rounded-full blur-sm"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.5, 0.8, 0.5]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </div>
+        <span className="font-medium">IA Intelligente Pro</span>
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+      </motion.div>
+    </div>
+  );
+};
 
 const Index = () => {
   const { country } = useCountry();
-  const [salaryValue, setSalaryValue] = useState(250000);
-  const [familyStatus, setFamilyStatus] = useState("single");
-  const [childrenCount, setChildrenCount] = useState(0);
-  
-  // Constantes pour les calculs des frais professionnels
-  const FRAIS_PRO_RATE = 0.20; // 20% pour frais professionnels
-  const FRAIS_PRO_PLAFOND_ANNUEL = 600000 * 12; // 600 000 FCFA par mois * 12
-  const FRAIS_PRO_PLAFOND_MENSUEL = FRAIS_PRO_PLAFOND_ANNUEL / 12;
+  const [activeFeature, setActiveFeature] = useState(0);
 
-  // Constantes CNSS 2025
-  const CNSS_PLAFOND_BENIN = 600000; // FCFA - Mis à jour pour 2025
-  const CNSS_SALARIAL_RATE_BENIN = 0.036; // 3.6%
-  const CNSS_EMPLOYER_RATE_BENIN = 0.154; // 15.4% (6.4% vieillesse + 9% PF + 0.5% AT)
-  const CNSS_SALARIAL_RATE_TOGO = 0.0968; // 9.68%
-  const CNSS_EMPLOYER_RATE_TOGO = 0.1707; // 17.07%
-
-  // Barème ITS Bénin 2025
-  const ITS_TRANCHES_BENIN = [
-    { min: 0, max: 50000, taux: 0 },
-    { min: 50001, max: 130000, taux: 0.10 },
-    { min: 130001, max: 280000, taux: 0.15 },
-    { min: 280001, max: 530000, taux: 0.20 },
-    { min: 530001, max: Infinity, taux: 0.30 }
+  const features = [
+    {
+      icon: <BarChart3 className="h-6 w-6" />,
+      title: "Gestion de la paie simplifiée",
+      description: "Automatisez vos calculs de paie et générez des fiches de paie en quelques clics."
+    },
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: "Conformité garantie",
+      description: "Restez à jour avec les réglementations fiscales du Bénin et du Togo."
+    },
+    {
+      icon: <Clock className="h-6 w-6" />,
+      title: "Gain de temps",
+      description: "Réduisez le temps consacré à la gestion de la paie de plusieurs jours à quelques heures."
+    },
+    {
+      icon: <Users className="h-6 w-6" />,
+      title: "Gestion des employés",
+      description: "Gérez facilement les informations et les documents de vos employés."
+    }
   ];
 
-  // Barème IRPP Togo 2025
-  const IRPP_TRANCHES_TOGO = [
-    { min: 0, max: 60000, taux: 0 },
-    { min: 60001, max: 150000, taux: 0.10 },
-    { min: 150001, max: 300000, taux: 0.15 },
-    { min: 300001, max: 500000, taux: 0.20 },
-    { min: 500001, max: 800000, taux: 0.25 },
-    { min: 800001, max: Infinity, taux: 0.30 }
+  const stats = [
+    { number: "2000+", label: "Entreprises" },
+    { number: "50k+", label: "Fiches de paie" },
+    { number: "99.9%", label: "Précision" },
+    { number: "24/7", label: "Support" }
   ];
 
-  // Calcul des montants
-  const cnssAmount = calculateCNSS(salaryValue, country);
-  const impotAmount = calculateImpot(salaryValue, country, familyStatus, childrenCount);
-  const netSalary = salaryValue - cnssAmount - impotAmount;
-
-  // Pourcentages pour l'affichage
-  const cssCnssPercent = Math.round((cnssAmount / salaryValue) * 100);
-  const cssIrppPercent = Math.round((impotAmount / salaryValue) * 100);
-
-  // Fonction pour formater les montants en FCFA
-  const formatSalary = (amount) => {
-    return new Intl.NumberFormat('fr-FR').format(Math.round(amount));
-  };
-  
-  const cssNetPercent = Math.round((netSalary / salaryValue) * 100);
-  
   return (
     <Layout>
-      {/* Hero Section - Redesigned with more African-inspired elements */}
-      <section className="relative overflow-hidden section-padding">
-        {/* Decorative elements */}
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl bg-gradient-to-br from-benin-green/20 to-togo-red/10 animate-float-slow"></div>
-        <div className="absolute top-40 -left-10 w-40 h-40 rounded-full blur-2xl bg-gradient-to-tr from-togo-yellow/20 to-blue-400/10 animate-float"></div>
-        <div className="absolute bottom-20 right-1/4 w-32 h-32 rounded-full blur-xl bg-gradient-to-tl from-purple-400/10 to-benin-green/10 animate-float-reverse"></div>
-        
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            {/* Left side - Main content */}
-            <div className="md:col-span-6 z-10">
-              <div className="animate-fade-in">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-display leading-tight mb-6">
-                  <span className="relative inline-block">
-                    Simulation
-                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-benin-green/30" viewBox="0 0 200 8">
-                      <path d="M0,5 Q40,0 80,5 T160,5 T200,5" fill="none" stroke="currentColor" strokeWidth="4"></path>
-                    </svg>
-                  </span> 
-                  <span className="block">et gestion de</span>
-                  <span className="text-benin-green relative">
-                    paie
-                    <span className="absolute -right-12 top-0 transform rotate-12 text-xl">🇧🇯 🇹🇬</span>
-                  </span>
-                </h1>
-                <p className="text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-lg">
-                  Votre partenaire digital pour des calculs de salaire précis et conformes aux législations d'Afrique de l'Ouest.
-                </p>
-                
-                {/* Call to action buttons with hover animations */}
-                <div className="flex flex-wrap gap-4">
-                  <Link to="/simulation" className="btn-primary group">
-                    <span>Simuler maintenant</span>
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  <Link to="/about" className="btn-secondary group">
-                    <span className="relative z-10">Découvrir</span>
-                    <span className="absolute inset-0 bg-benin-green/10 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform"></span>
-                  </Link>
-                </div>
-              </div>
+            {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl bg-benin-green/10 dark:bg-benin-green/20 animate-float-slow"></div>
+          <div className="absolute top-1/2 -left-20 w-60 h-60 rounded-full blur-2xl bg-blue-400/10 dark:bg-togo-yellow/20 animate-float"></div>
+          <div className="absolute bottom-20 right-1/3 w-40 h-40 rounded-full blur-xl bg-violet-400/10 dark:bg-purple-400/20 animate-float-reverse"></div>
+                  </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <motion.h1 
+                className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 transition-colors duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                La gestion de paie
+                <span className="text-benin-green"> réinventée</span> pour l'Afrique
+              </motion.h1>
+              <motion.p 
+                className="text-xl text-gray-600 dark:text-gray-300 mb-8 transition-colors duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                Simplifiez vos processus de paie, assurez la conformité et gagnez du temps avec notre solution adaptée aux entreprises africaines.
+              </motion.p>
+              <motion.div 
+                className="flex flex-wrap gap-4 justify-center lg:justify-start"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <Link to="/register" className="btn-primary group">
+                  <span>Commencer gratuitement</span>
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link to="/simulation" className="btn-secondary group">
+                  <span>Simuler un salaire</span>
+                  <Play className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                </Link>
+              </motion.div>
             </div>
-            
-            {/* Right side - Interactive salary simulator */}
-            <div className="md:col-span-6 z-10">
+
+            <motion.div 
+              className="relative hidden lg:block"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
               <div className="relative">
-                {/* Country badge */}
-                <div className="absolute -top-6 -right-6 country-badge">
-                  <span className="flag">{country === "benin" ? "🇧🇯" : "🇹🇬"}</span>
-                  <span className="name">{country === "benin" ? "Bénin" : "Togo"}</span>
-                </div>
-                
-                {/* Mini interactive simulator */}
-                <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl p-6 transform transition-all hover:scale-[1.02]">
-                  <h3 className="text-xl font-bold mb-6 flex items-center">
-                    <Calculator className="text-benin-green mr-2 h-5 w-5" />
-                    Simulation rapide
-                  </h3>
-                  
-                  {/* Salary slider */}
-                  <div className="space-y-6 mb-4">
-                    <div>
-                      <label className="input-label">Salaire brut</label>
-                      <div className="flex items-center space-x-3">
-                        <Input
-                          type="number"
-                          value={salaryValue}
-                          onChange={(e) => setSalaryValue(Number(e.target.value))}
-                          min={50000}
-                          max={1000000}
-                          step={1000}
-                          className="w-full"
-                        />
-                        <output className="text-benin-green font-mono font-bold whitespace-nowrap">
-                          {formatSalary(salaryValue)} FCFA
-                        </output>
+                <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-6 overflow-hidden">
+                  {/* Dashboard Preview */}
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-violet-600 to-blue-500 flex items-center justify-center">
+                          <Sparkles className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-white font-medium">Assistant IA</h3>
+                          <p className="text-white/60 text-sm">Analyse en cours...</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-green-500 text-sm">En ligne</span>
                       </div>
                     </div>
-                    
-                    {/* Family status selector */}
-                    <div>
-                      <label className="input-label">Situation familiale</label>
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        <button 
-                          className={`family-option ${familyStatus === "single" ? "active" : ""}`}
-                          onClick={() => {
-                            setFamilyStatus("single");
-                            setChildrenCount(0);
-                          }}
-                        >
-                          <span className="icon">👤</span>
-                          <span className="text">Célibataire</span>
-                        </button>
-                        <button 
-                          className={`family-option ${familyStatus === "married" ? "active" : ""}`}
-                          onClick={() => setFamilyStatus("married")}
-                        >
-                          <span className="icon">👫</span>
-                          <span className="text">Marié(e)</span>
-                        </button>
-                        <button 
-                          className={`family-option ${familyStatus === "divorced" ? "active" : ""}`}
-                          onClick={() => setFamilyStatus("divorced")}
-                        >
-                          <span className="icon">💔</span>
-                          <span className="text">Divorcé(e)</span>
-                        </button>
-                      </div>
 
-                      {/* Children count selector - Only shown if married or divorced */}
-                      {(familyStatus === "married" || familyStatus === "divorced") && (
-                        <div className="mt-4">
-                          <label className="input-label">Nombre d'enfants</label>
-                          <div className="grid grid-cols-5 gap-2 mt-2">
-                            {[0, 1, 2, 3, 4].map((count) => (
-                              <button
-                                key={count}
-                                className={`family-option ${childrenCount === count ? "active" : ""}`}
-                                onClick={() => setChildrenCount(count)}
-                              >
-                                <span className="text">{count}</span>
-                              </button>
-                            ))}
+                    {/* AI Analysis Cards */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <motion.div 
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <LineChart className="h-5 w-5 text-violet-400" />
+                          <span className="text-white/90">Prévisions Salariales</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 bg-violet-400/30 rounded-full w-3/4"></div>
+                          <div className="h-2 bg-violet-400/20 rounded-full w-1/2"></div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="h-5 w-5 text-blue-400" />
+                          <span className="text-white/90">Analyse RH</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 bg-blue-400/30 rounded-full w-2/3"></div>
+                          <div className="h-2 bg-blue-400/20 rounded-full w-5/6"></div>
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* AI Chat Interface */}
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-600 to-blue-500 flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white/90 text-sm">
+                            J'ai analysé les données de paie du mois dernier. Voici mes recommandations pour optimiser la gestion salariale...
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <span className="inline-block px-2 py-1 rounded-full bg-violet-500/20 text-violet-300 text-xs">
+                              Optimisation fiscale
+                            </span>
+                            <span className="inline-block px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs">
+                              Conformité
+                            </span>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Results with chart */}
-                  <div className="p-4 bg-gray-50 dark:bg-slate-900/60 rounded-lg">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Salaire brut:</span>
-                        <span className="text-gray-900 dark:text-gray-100 font-bold">{formatSalary(salaryValue)} FCFA</span>
                       </div>
+                    </div>
 
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-red-600 dark:text-red-400">
-                            - CNSS ({country === "benin" ? "3.6%" : "9.68%"})
-                          </span>
-                          <span className="text-red-600 dark:text-red-400">
-                            -{formatSalary(cnssAmount)} FCFA
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-red-600 dark:text-red-400">
-                            - {country === "benin" ? "ITS" : "IRPP"}
-                          </span>
-                          <span className="text-red-600 dark:text-red-400">
-                            -{formatSalary(impotAmount)} FCFA
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Salaire net:</span>
-                          <span className="text-benin-green font-bold text-lg">
-                            {formatSalary(netSalary)} FCFA
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Distribution chart */}
-                    <div className="h-12 w-full relative mt-4 mb-4 rounded-lg overflow-hidden">
-                      <div className="absolute inset-0 flex">
-                        <div className="bg-benin-green h-full" style={{ width: `${cssNetPercent}%` }}></div>
-                        <div className="bg-amber-500 h-full" style={{ width: `${cssIrppPercent}%` }}></div>
-                        <div className="bg-red-400 h-full" style={{ width: `${cssCnssPercent}%` }}></div>
-                      </div>
-                      <div className="absolute inset-0 flex text-xs text-white font-medium">
-                        <div className="flex-grow flex items-center justify-center">Net</div>
-                        <div className="w-[12%] flex items-center justify-center">{country === "benin" ? "ITS" : "IRPP"}</div>
-                        <div className="w-[6%] flex items-center justify-center">CNSS</div>
-                      </div>
-                    </div>
-                    
-                    <Link to="/simulation" className="w-full btn-primary-sm inline-flex items-center justify-center">
-                      <span>Simulation détaillée</span>
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Link>
+                    {/* Animated Elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-600/20 to-blue-500/20 rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-violet-600/20 rounded-full blur-2xl"></div>
                   </div>
                 </div>
+
+                {/* AI Badge */}
+                <motion.div 
+                  className="absolute -bottom-4 -right-4 bg-gradient-to-r from-violet-600 to-blue-500 text-white px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm border border-white/20"
+                  whileHover={{ scale: 1.05, rotate: 1 }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Sparkles className="h-5 w-5 animate-pulse" />
+                      <motion.div
+                        className="absolute -inset-1 bg-white/20 rounded-full blur-sm"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 0.8, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </div>
+                    <span className="font-medium">IA Intelligente Pro</span>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+                  </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Features section - Redesigned with cards that have hover effects */}
-      <section className="py-24 relative">
-        <div className="absolute inset-0 opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48cGF0aCBkPSJNMzAgMEMxMy40IDAgMCAxMy40IDAgMzBzMTMuNCAzMCAzMCAzMCA0NS00LjcgNjAtMjAgMjAtNDUuMyAyMC02MFM0Ni42IDAgMzAgMHptMCA1MmMtMTIuMiAwLTIyLTkuOC0yMi0yMnM5LjgtMjIgMjItMjIgMzIuOCA2LjkgNDQgMThDNjMuMSAzNy45IDQyLjIgNTIgMzAgNTJ6Ii8+PC9zdmc+')]"></div>
-        
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16 max-w-3xl mx-auto">
-            <span className="inline-block px-4 py-1 rounded-full bg-benin-green/10 text-benin-green font-medium text-sm mb-4">Caractéristiques</span>
-            <h2 className="text-4xl md:text-5xl font-display mb-6">Une approche innovante de la paie</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Découvrez comment PayeAfrique révolutionne la gestion des salaires en Afrique de l'Ouest
-            </p>
-          </div>
-
-          {/* Feature cards with hover effects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature 1 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <Check className="feature-icon-svg" />
-              </div>
-              <h3 className="feature-title">Conformité totale</h3>
-              <p className="feature-description">
-                Calculs conformes aux dernières réglementations fiscales du Bénin et du Togo, mis à jour automatiquement.
-              </p>
-              <div className="feature-graphic">
-                <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-benin-green rounded-full" style={{ width: '100%' }}></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <FadeInWhenVisible key={index} delay={index * 0.1}>
+                <div className="text-center">
+                  <h3 className="text-4xl font-bold text-benin-green mb-2">{stat.number}</h3>
+                  <p className="text-gray-600">{stat.label}</p>
                 </div>
-                <div className="text-xs text-benin-green mt-1">100% conforme</div>
-              </div>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <BarChart3 className="feature-icon-svg" />
-              </div>
-              <h3 className="feature-title">Tableaux de bord avancés</h3>
-              <p className="feature-description">
-                Visualisez facilement la structure de votre paie avec des graphiques interactifs et personnalisables.
-              </p>
-              <div className="feature-graphic">
-                <div className="flex h-6 items-end space-x-1">
-                  <div className="w-1/5 h-2/3 bg-benin-green/70 rounded-t"></div>
-                  <div className="w-1/5 h-full bg-benin-green rounded-t"></div>
-                  <div className="w-1/5 h-1/2 bg-benin-green/70 rounded-t"></div>
-                  <div className="w-1/5 h-3/4 bg-benin-green/80 rounded-t"></div>
-                  <div className="w-1/5 h-1/3 bg-benin-green/60 rounded-t"></div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Feature 3 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <Shield className="feature-icon-svg" />
-              </div>
-              <h3 className="feature-title">Sécurité maximale</h3>
-              <p className="feature-description">
-                Protection de vos données sensibles par des systèmes de sécurité avancés et conformes aux normes.
-              </p>
-              <div className="feature-graphic">
-                <div className="relative h-8 w-8 mx-auto">
-                  <div className="absolute inset-0 bg-benin-green/20 rounded-full animate-ping-slow"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Shield className="h-4 w-4 text-benin-green" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Feature 4 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <Clock className="feature-icon-svg" />
-              </div>
-              <h3 className="feature-title">Gain de temps</h3>
-              <p className="feature-description">
-                Automatisez vos calculs et générez des fiches de paie en quelques clics plutôt qu'en heures.
-              </p>
-              <div className="feature-graphic">
-                <div className="flex justify-center">
-                  <div className="relative h-8 w-16">
-                    <div className="absolute left-0 bottom-0 w-6 h-6 border-2 border-benin-green rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-benin-green rounded-full"></div>
-                    </div>
-                    <div className="absolute right-0 bottom-0 w-6 h-6 border-2 border-benin-green/30 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Feature 5 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <svg className="h-6 w-6 text-benin-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Documentation complète</h3>
-              <p className="feature-description">
-                Accédez à une base de connaissances détaillée sur les réglementations et bonnes pratiques.
-              </p>
-              <div className="feature-graphic">
-                <div className="flex justify-center space-x-1">
-                  <div className="w-3 h-4 bg-benin-green/30 rounded"></div>
-                  <div className="w-3 h-6 bg-benin-green/50 rounded"></div>
-                  <div className="w-3 h-8 bg-benin-green/70 rounded"></div>
-                  <div className="w-3 h-5 bg-benin-green/40 rounded"></div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Feature 6 */}
-            <div className="feature-card group">
-              <div className="feature-icon">
-                <svg className="h-6 w-6 text-benin-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
-              <h3 className="feature-title">Simulation multi-scénarios</h3>
-              <p className="feature-description">
-                Comparez différentes structures de rémunération pour optimiser vos choix stratégiques.
-              </p>
-              <div className="feature-graphic">
-                <div className="flex justify-center items-end space-x-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-2 h-10 bg-benin-green/50 rounded-t"></div>
-                    <div className="mt-1 text-xs">A</div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-2 h-6 bg-benin-green/70 rounded-t"></div>
-                    <div className="mt-1 text-xs">B</div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-2 h-8 bg-benin-green rounded-t"></div>
-                    <div className="mt-1 text-xs">C</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </FadeInWhenVisible>
+            ))}
           </div>
         </div>
       </section>
-      
-      {/* New section: Country map comparison */}
-      <section className="py-20 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+
+      {/* Features Section */}
+      <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1 rounded-full bg-benin-green/10 text-benin-green font-medium text-sm mb-4">Couverture régionale</span>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">Expertise locale</h2>
-            <p className="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Notre solution est spécialement conçue pour les spécificités légales et fiscales du Bénin et du Togo
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="flex justify-center">
-              <div className="relative w-full max-w-md">
-                <img 
-                  src="/images/benin-map.svg" 
-                  alt="Carte du Bénin" 
-                  className={`w-full transition-all duration-500 ${country === "benin" ? "opacity-100 scale-100" : "opacity-50 scale-95"}`}
-                />
-                <img 
-                  src="/images/togo-map.svg" 
-                  alt="Carte du Togo" 
-                  className={`w-[70%] absolute left-0 top-[5%] transition-all duration-500 ${country === "togo" ? "opacity-100 scale-100" : "opacity-50 scale-95"}`}
-                />
-                {/* Connection points to show relations */}
-                <div className="absolute top-1/3 left-1/3 w-3 h-3 bg-benin-green rounded-full animate-pulse"></div>
-                <div className="absolute top-1/2 left-1/4 w-3 h-3 bg-togo-red rounded-full animate-pulse"></div>
-              </div>
+          <FadeInWhenVisible>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Tout ce dont vous avez besoin pour gérer votre paie
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Une solution complète qui s'adapte à vos besoins spécifiques
+              </p>
             </div>
-            
-            <div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
-                <div className="flex gap-4 mb-6">
-                  <button 
-                    className={`flex-1 p-3 rounded-lg flex flex-col items-center transition-all ${
-                      country === "benin" 
-                        ? "bg-benin-green text-white" 
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                    onClick={() => console.log("Would switch to Benin")}
+          </FadeInWhenVisible>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <FadeInWhenVisible key={index} delay={index * 0.2}>
+                <motion.div
+                  className="feature-card group cursor-pointer"
+                  whileHover={{ y: -5 }}
+                  onClick={() => setActiveFeature(index)}
+                >
+                  <div className={`feature-icon ${activeFeature === index ? 'bg-benin-green text-white' : 'bg-benin-green/10 text-benin-green'}`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
+                  <ChevronRight className="h-5 w-5 text-benin-green mt-4 group-hover:translate-x-2 transition-transform" />
+                </motion.div>
+              </FadeInWhenVisible>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Product Demo Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <FadeInWhenVisible>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Une interface intuitive pour une gestion efficace
+                </h2>
+                <div className="space-y-6">
+                  <motion.div 
+                    className="flex items-start gap-4"
+                    whileHover={{ x: 10 }}
                   >
-                    <span className="text-2xl">🇧🇯</span>
-                    <span className="mt-1 font-medium">Bénin</span>
-                  </button>
-                  <button 
-                    className={`flex-1 p-3 rounded-lg flex flex-col items-center transition-all ${
-                      country === "togo" 
-                        ? "bg-togo-red text-white" 
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                    onClick={() => console.log("Would switch to Togo")}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                      <Check className="h-5 w-5 text-benin-green" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Calculs automatisés</h3>
+                      <p className="text-gray-600">
+                        Finis les calculs manuels complexes. Notre système gère tout automatiquement.
+                      </p>
+                    </div>
+                  </motion.div>
+                  <motion.div 
+                    className="flex items-start gap-4"
+                    whileHover={{ x: 10 }}
                   >
-                    <span className="text-2xl">🇹🇬</span>
-                    <span className="mt-1 font-medium">Togo</span>
-                  </button>
-                </div>
-                
-                <h3 className="text-xl font-bold mb-3">Comparaison des législations</h3>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1 font-medium">Impôt sur salaire</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-benin-green/10 rounded text-sm">
-                      {country === "benin" ? "IPTS: 0-30%" : "IPTS: 0-30%"}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                      <Building className="h-5 w-5 text-benin-green" />
                     </div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-togo-red/10 rounded text-sm">
-                      {country === "togo" ? "IRPP: 0-35%" : "IRPP: 0-35%"}
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Multi-entreprises</h3>
+                      <p className="text-gray-600">
+                        Gérez plusieurs entreprises depuis une seule interface.
+                      </p>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1 font-medium">Cotisation employeur</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-benin-green/10 rounded text-sm">15.4%</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-togo-red/10 rounded text-sm">16.5%</div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1 font-medium">Cotisation salarié</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-benin-green/10 rounded text-sm">3.6%</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-togo-red/10 rounded text-sm">4.0%</div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1 font-medium">Plafond mensuel</div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-benin-green/10 rounded text-sm">
-                      {formatSalary(250000)} FCFA
+                  </motion.div>
+                  <motion.div 
+                    className="flex items-start gap-4"
+                    whileHover={{ x: 10 }}
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-benin-green/10 flex items-center justify-center">
+                      <Globe className="h-5 w-5 text-benin-green" />
                     </div>
-                    <div className="col-span-1 text-center px-2 py-1 bg-togo-red/10 rounded text-sm">
-                      {formatSalary(240000)} FCFA
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Support local</h3>
+                      <p className="text-gray-600">
+                        Une équipe locale à votre disposition pour vous accompagner.
+                      </p>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <Link to="/country-selection" className="text-benin-green hover:underline inline-flex items-center">
-                    Voir détails législatifs complets
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
+                  </motion.div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Testimonials section */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1 rounded-full bg-benin-green/10 text-benin-green font-medium text-sm mb-4">Témoignages</span>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">Ils nous font confiance</h2>
-            <p className="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Découvrez comment PayeAfrique simplifie la vie de nos utilisateurs à travers toute l'Afrique de l'Ouest
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Testimonial 1 */}
-            <div className="testimonial-card">
-              <div className="testimonial-header">
-                <div className="avatar-container">
-                  <img src="https://i.pravatar.cc/60?img=11" alt="Avatar" className="avatar" />
-                  <span className="testimonial-badge">🇧🇯</span>
-                </div>
-                <div>
-                  <h4 className="name font-bold">Kouassi Amoussou</h4>
-                  <p className="position text-sm text-gray-600 dark:text-gray-400">DRH, Entreprise Exemple</p>
-                </div>
-                <div className="rating">
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                </div>
-              </div>
-              <blockquote className="testimonial-content">
-                "PayeAfrique nous a fait gagner un temps considérable. Les calculs sont toujours exacts et conformes aux dernières lois fiscales du Bénin. Un vrai gain de productivité pour notre service RH."
-              </blockquote>
-              <div className="testimonial-video-trigger">
-                <Play className="video-icon" /> Voir son témoignage
-              </div>
-            </div>
+            </FadeInWhenVisible>
             
-            {/* Testimonial 2 */}
-            <div className="testimonial-card">
-              <div className="testimonial-header">
-                <div className="avatar-container">
-                  <img src="https://i.pravatar.cc/60?img=32" alt="Avatar" className="avatar" />
-                  <span className="testimonial-badge">🇹🇬</span>
+            <FadeInWhenVisible delay={0.3}>
+              <div className="relative">
+                <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-6 overflow-hidden">
+                  {/* Dashboard Preview */}
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-violet-600 to-blue-500 flex items-center justify-center">
+                          <Sparkles className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-white font-medium">Assistant IA</h3>
+                          <p className="text-white/60 text-sm">Analyse en cours...</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-green-500 text-sm">En ligne</span>
+                      </div>
+                    </div>
+
+                    {/* AI Analysis Cards */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <motion.div 
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <LineChart className="h-5 w-5 text-violet-400" />
+                          <span className="text-white/90">Prévisions Salariales</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 bg-violet-400/30 rounded-full w-3/4"></div>
+                          <div className="h-2 bg-violet-400/20 rounded-full w-1/2"></div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="h-5 w-5 text-blue-400" />
+                          <span className="text-white/90">Analyse RH</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 bg-blue-400/30 rounded-full w-2/3"></div>
+                          <div className="h-2 bg-blue-400/20 rounded-full w-5/6"></div>
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* AI Chat Interface */}
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-600 to-blue-500 flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white/90 text-sm">
+                            J'ai analysé les données de paie du mois dernier. Voici mes recommandations pour optimiser la gestion salariale...
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <span className="inline-block px-2 py-1 rounded-full bg-violet-500/20 text-violet-300 text-xs">
+                              Optimisation fiscale
+                            </span>
+                            <span className="inline-block px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs">
+                              Conformité
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Animated Elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-600/20 to-blue-500/20 rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-violet-600/20 rounded-full blur-2xl"></div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="name font-bold">Afi Djigbodi</h4>
-                  <p className="position text-sm text-gray-600 dark:text-gray-400">Comptable, PME Togolaise</p>
-                </div>
-                <div className="rating">
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star" />
-                </div>
+
+                {/* AI Badge */}
+                <motion.div 
+                  className="absolute -bottom-4 -right-4 bg-gradient-to-r from-violet-600 to-blue-500 text-white px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm border border-white/20"
+                  whileHover={{ scale: 1.05, rotate: 1 }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Sparkles className="h-5 w-5 animate-pulse" />
+                      <motion.div
+                        className="absolute -inset-1 bg-white/20 rounded-full blur-sm"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 0.8, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </div>
+                    <span className="font-medium">IA Intelligente Pro</span>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping" />
+                  </div>
+                </motion.div>
               </div>
-              <blockquote className="testimonial-content">
-                "Avant PayeAfrique, je passais des heures à calculer manuellement les salaires. Maintenant, je gère tout notre processus de paie en quelques clics, et les employés peuvent consulter leurs bulletins en ligne."
-              </blockquote>
-              <div className="testimonial-video-trigger">
-                <Play className="video-icon" /> Voir son témoignage
-              </div>
-            </div>
-            
-            {/* Testimonial 3 */}
-            <div className="testimonial-card">
-              <div className="testimonial-header">
-                <div className="avatar-container">
-                  <img src="https://i.pravatar.cc/60?img=53" alt="Avatar" className="avatar" />
-                  <span className="testimonial-badge">🇧🇯</span>
-                </div>
-                <div>
-                  <h4 className="name font-bold">Emmanuel Houngbo</h4>
-                  <p className="position text-sm text-gray-600 dark:text-gray-400">CEO, Startup Tech</p>
-                </div>
-                <div className="rating">
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                  <Star className="star filled" />
-                </div>
-              </div>
-              <blockquote className="testimonial-content">
-                "En tant que startup en croissance, nous avions besoin d'une solution flexible qui évolue avec nous. PayeAfrique répond parfaitement à ce besoin et nous permet de rester conformes même quand la législation change."
-              </blockquote>
-              <div className="testimonial-video-trigger">
-                <Play className="video-icon" /> Voir son témoignage
-              </div>
-            </div>
-          </div>
-          
-          {/* Slider controls */}
-          <div className="flex justify-center mt-8 items-center space-x-4">
-            <button className="h-10 w-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow hover:shadow-md">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="flex space-x-2">
-              <span className="h-2 w-8 bg-benin-green rounded-full"></span>
-              <span className="h-2 w-2 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
-              <span className="h-2 w-2 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
-            </div>
-            <button className="h-10 w-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow hover:shadow-md">
-              <ArrowRight className="h-5 w-5" />
-            </button>
+            </FadeInWhenVisible>
           </div>
         </div>
       </section>
 
-      {/* CTA Section - Now with more dynamic design */}
-      <section className="relative py-24 overflow-hidden">
-        {/* Background with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-benin-green to-benin-green/80"></div>
-        
-        {/* African pattern overlay */}
-        <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNNDMuMjgsMjguODVsMi4yNS0uNjRhMi44NSwyLjg1LDAsMCwwLDEuOC0xLjc4LDIuODMsMi44MywwLDAsMC0uMy0yLjVBMywzLDAsMCwwLDQ1LjMxLDIyLjdhNC4zMSw0LjMxLDAsMCwwLTEsLjEybC0yLjI0LjY0YTIuODQsMi44NCwwLDAsMC0xLjc4LDEuNzhBMi44MiwyLjgyLDAsMCwwLDQwLjU4LDI4YTMsMywwLDAsMCwxLjcyLDEuMjNBNC4zMSw0LjMxLDAsMCwwLDQzLjI4LDI4Ljg1Wm0tMy41LTE1LjQ0TDQyLDEyLjc2YTIuODQsMi44NCwwLDAsMCwxLjc4LTEuNzgsMi44NCwyLjg0LDAsMCwwLS4yOS0yLjVBMywzLDAsMCwwLDQxLjgxLDcuMjZhMy44LDMuOCwwLDAsMC0xLC4xM2wtMi4yNS42M2EyLjg0LDIuODQwLDAsMCwwLTEuNzgsMS43OCwyLjgzLDIuODMsMCwwLDAsLjMsMi41LDMuMDcsMy4wNywwLDAsMCwxLjcxLDEuMjJBNC4zMSw0LjMxLDAsMCwwLDM5Ljc4LDEzLjQxWk01MS42LDQ5LjA2QTMuMDYsMy4wNiwwLDAsMCw0OS44OSw0Ny44YTQsNCwwLDAsMC0xLS4xM2wtMi4yNS42M2EzLDMsMCwwLDAtMS43OCwxLjc5LDMsMywwLDAsMCwuMywyLjVBMi44NSwyLjg1LDAsMCwwLDQ3LDUzLjgxYTMuOSwzLjksMCwwLDAsMS0uMTJsMi4yNC0uNjRhMi44NCwyLjg0LDAsMCwwLDEuNzgtMS43OEEyLjgzLDIuODMsMCwwLDAsNTEuNiw0OS4wNlptLTYuMTUtOS45LDIuMjUtLjY0YTIuODQsMi44NCwwLDAsMCwxLjc4LTEuNzgsMi44MywyLjgzLDAsMCwwLS4yOS0yLjUsMy4wNiwzLjA2LDAsMCwwLTEuNzItMS4yMyw0LDQsMCwwLDAtMS0uMTNsLTIuMjUuNjRhMi44NCwyLjg0LDAsMCwwLTEuNzgsMS43OSwyLjgyLDIuODIsMCwwLDAsLjMtMi41LDIuODQsMi44NCwwLDAsMCwxLjcyLDEuMjJBNC4zMSw0LjMxLDAsMCwwLDQ1LjQ1LDM5LjE2Wk0yNi4zNywxMC4yOWwyLjI1LS42NGEyLjgzLDIuODMsMCwwLDAsMS43OC0xLjc4QTIuODMsMi44MywwLDAsMCwzMC4xLDUuMzcsMywzLDAsMCwwLDI4LjM5LDQuMTRhNCw0LDAsMCwwLTEtLjEzbC0yLjI1LjY0YTIuODQsMi44NCwwLDAsMC0xLjc4LDEuNzgsMi44NCwyLjg0LDAsMCwwLC4zLDIuNSwzLDMsMCwwLDAsMS43MSwxLjIzQTQuMzEsNC4zMSwwLDAsMCwyNi4zNywxMC4yOVptMzEsMTQuNzRBMi44NSwyLjg1LDAsMCwwLDU5LDI2LjI1YTIuODUsMi44NSwwLDAsMC0uMTMtMWwtLjY0LTIuMjRhMi44NSwyLjg1LDAsMCwwLTEuNzktMS43OSwyLjgzLDIuODMsMCwwLDAtMi41LjNBMywzLDAsMCwwLDUyLjczLDIzLjJhNC4xLDQuMSwwLDAsMCwuMTMsMWwuNjQsMi4yNGEyLjg0LDIuODQsMCwwLDAsMS43OCwxLjc4LDIuODQsMi44NCwwLDAsMCwyLjUtLjI5QTMsMywwLDAsMCw1Ny4zNywyNVptLTE1LDI3LjczYTMsMywwLDEsMC00LjM0LjQ4QTMsMywwLDAsMCw0Mi4zNiw1Mi43M1pNNTQuODcsMzkuMTZhMywzLDAsMCwwLTEuODIsMS41NywzLDMsMCwwLDAsLjEyLDIuMzksMywyLDAsMCwwLDEuODIsMS41OCwzLDMsMCwwLDAsMi4zOS0uMTEsMywzLDAsMCwwLDEuNTgtMS44MywzLDMsMCwwLDAtLjEyLTIuMzksMywyLDAsMCwwLTEuODItMS41N0EzLDMsMCwwLDAsNTQuODcsMzkuMTZabS05LjQyLTE1LjIsOS42Ni0yLjc2YTIuODQsMi44NCwwLDAsMCwxLjc4LTEuNzgsMi44MywyLjgzLDAsMCwwLS4zLTIuNSwzLjA2LDMuMDYsMCwwLDAtMS43MS0xLjIzLDQuMzgsNC4zOCwwLDAsMC0xLS4xM2wtMy4wOC44OGEyLjgzLDIuODMsMCwwLDAtMS43OCwxLjc4LDIuODQsMi44NCwwLDAsMCwuMywyLjUsMywzLDAsMCwwLDEuNzEsMS4yMkE0LjM4LDQuMzgsMCwwLDAsMjYuMzMsMTUuM1ptNC40MSwxMy44YTIuODMsMi44MywwLDAsMC0uMTYtMkEyLjksMi45LDAsMCwwLDI5LjI1LDI2YTQuMTgsNC4xOCwwLDAsMC0uOC0uMjlsLTQuNjEtMS4wOWEyLjgzLDIuODMsMCwwLDAtMi40MS41MywyLjg0LDIuODQsMCwwLDAtLjg5LDIuMzMsMi45MywyLjkzLDAsMCwwLDEuMzIsMS45Miw0LjE4LDQuMTgsMCwwLDAsLjguMjlsNC42MiwxLjFhMi44NSwyLjg1LDAsMCwwLDIuNC0uNTNBMi44NSwyLjg1LDAsMCwwLDMwLjc0LDI5LjFaTTM3LDQ2LjE1YTMsMywwLDEsMC00LjM0LjQ4QTMsMywwLDAsMCwzNyw0Ni4xNVptMy40My0yMC40NGE0LjMxLDQuMzEsMCwwLDAsMC0xLjA2LDMsMywwLDAsMC0uNDgtMS45MSwzLjM0LDMuMzQsMCwwLDAtMS42Mi0xLjEsMi45MiwyLjkyLDAsMCwwLTIsLjE0LDIuOCwyLjgsMCwwLDAtMS4zNCwxLjM0LDIuOTIsMi45MiwwLDAsMC0uMTMsMmwtLjA2LS4wOWEzLjM0LDMuMzQsMCwwLDAsLjQ4LDEuOTEsMywyLDAsMCwwLDEuNjIsMS4xLDIuOTIsMi45MiwwLDAsMCwyLS4xNUEyLjc5LDIuNzksMCwwLDAsNDAuNDQsMjUuNzFabS0xNiw5LjMxYTMsMywwLDAsMC0xLjI3LDEuNzcsMy4wNSwzLjA1LDAsMCwwLC4yNCwyLjIxLDMsMywwLDAsMCwxLjc1LDEuMywzLDMsMCwwLDAsMi4yMy0yLjIzLDMsMywwLDAsMCwxLjI4LTEuNzYsMy4wNywzLjA3LDAsMCwwLTEuNjQtMi4yMkEzLjksMy45LDAsMCwwLDI3LjMzLDQ5LjExWk02LjU5LDM0LjcxYTQsNCwwLDAsMC0uNjEuMzVsLTEuODIsMS41NUEyLjgyLDIuODIsMCwwLDAsMy40MiwzOWEyLjgzLDIuODMsMCwwLDAsMS4yMiwyLjA3QTMsMywwLDAsMCw2LjgxLDQxLjdhNCw0LDAsMCwwLC42MS0uMzZMMTkuMjUsMyIvPjwvc3ZnPg==')]"></div>
-        
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-display text-white mb-6">
-              Prêt à optimiser votre gestion de paie ?
+      {/* Call to Action */}
+      <section className="py-20 bg-gradient-to-br from-benin-green to-benin-green/80 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <FadeInWhenVisible>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Prêt à moderniser votre gestion de paie ?
             </h2>
-            <p className="text-xl text-white/90 mb-8">
-              Rejoignez des milliers d'entreprises et de professionnels qui font confiance à PayeAfrique pour leurs besoins de paie.
+            <p className="text-xl mb-8 max-w-2xl mx-auto">
+              Rejoignez les entreprises qui font confiance à PayeAfrique pour leur gestion de paie.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-white text-benin-green px-8 py-4 rounded-lg font-medium shadow-lg transform transition-all hover:scale-105">
-                Créer un compte
-              </Link>
-              <Link to="/simulation" className="border-2 border-white text-white px-8 py-4 rounded-lg font-medium transition-all hover:bg-white/10">
-                Essayer sans inscription
-              </Link>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <motion.div whileHover={{ scale: 1.05 }}>
+                <Link to="/register" className="bg-white text-benin-green px-8 py-4 rounded-lg font-medium shadow-lg">
+                  Essayer gratuitement
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }}>
+                <Link to="/contact" className="border-2 border-white text-white px-8 py-4 rounded-lg font-medium transition-all hover:bg-white/10">
+                  Contacter l'équipe
+                </Link>
+              </motion.div>
             </div>
-          </div>
-          
-          {/* Decorative elements */}
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-tr-full"></div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-full"></div>
+          </FadeInWhenVisible>
         </div>
       </section>
     </Layout>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, Legend } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -66,7 +66,7 @@ const ChartContainer = ({ title, children, onExportExcel, onExportCSV }: ChartCo
   );
 };
 
-const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export const PayrollPieChart: React.FC<ChartProps> = ({ data, title }) => {
   return (
@@ -80,12 +80,14 @@ export const PayrollPieChart: React.FC<ChartProps> = ({ data, title }) => {
           outerRadius={80}
           fill="#8884d8"
           dataKey="value"
+          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
           ))}
         </Pie>
         <Tooltip />
+        <Legend />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -98,7 +100,7 @@ export const PayrollBarChart: React.FC<ChartProps> = ({ data, title }) => {
         <XAxis dataKey="name" />
         <YAxis />
         <Tooltip />
-        <Bar dataKey="value">
+        <Bar dataKey="value" fill="#8884d8">
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
           ))}
@@ -118,8 +120,10 @@ export const PayrollLineChart: React.FC<ChartProps> = ({ data, title }) => {
         <Line 
           type="monotone" 
           dataKey="value" 
-          stroke="#4F46E5" 
+          stroke="#2E7D32"
           strokeWidth={2}
+          dot={{ r: 4, fill: "white", stroke: "#2E7D32", strokeWidth: 2 }}
+          activeDot={{ r: 6 }}
         />
       </LineChart>
     </ResponsiveContainer>

@@ -1,59 +1,29 @@
+import { create } from 'zustand';
+import { ReactNode } from 'react';
+import React from 'react';
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+interface CountryStore {
+  country: string;
+  setCountry: (country: string) => void;
+}
 
-export type CountryId = "benin" | "togo";
+export const useCountry = create<CountryStore>((set) => ({
+  country: 'benin',
+  setCountry: (country: string) => set({ country }),
+}));
 
 interface CountryProviderProps {
-  children: React.ReactNode;
-  defaultCountry?: CountryId;
-  storageKey?: string;
+  children: ReactNode;
+  defaultCountry?: string;
 }
 
-interface CountryContextType {
-  country: CountryId;
-  setCountry: (country: CountryId) => void;
-}
-
-const CountryContext = createContext<CountryContextType | undefined>(undefined);
-
-export function CountryProvider({
-  children,
-  defaultCountry = "benin",
-  storageKey = "paye-afrique-country",
-}: CountryProviderProps) {
-  const [country, setCountryState] = useState<CountryId>(
-    () => {
-      const savedCountry = localStorage.getItem(storageKey);
-      return (savedCountry === "benin" || savedCountry === "togo") 
-        ? savedCountry as CountryId 
-        : defaultCountry;
-    }
-  );
-
-  const setCountry = (newCountry: CountryId) => {
-    localStorage.setItem(storageKey, newCountry);
-    setCountryState(newCountry);
-  };
-
-  useEffect(() => {
-    // You could perform additional actions when country changes
-    // For example, loading country-specific data or settings
-    console.log(`Country changed to: ${country}`);
-  }, [country]);
-
-  return (
-    <CountryContext.Provider value={{ country, setCountry }}>
-      {children}
-    </CountryContext.Provider>
-  );
-}
-
-export function useCountry() {
-  const context = useContext(CountryContext);
+export const CountryProvider = ({ children, defaultCountry = 'benin' }: CountryProviderProps) => {
+  const { setCountry } = useCountry();
   
-  if (context === undefined) {
-    throw new Error("useCountry must be used within a CountryProvider");
-  }
-  
-  return context;
-}
+  // Set the default country when the provider mounts
+  React.useEffect(() => {
+    setCountry(defaultCountry);
+  }, [defaultCountry, setCountry]);
+
+  return <>{children}</>;
+};

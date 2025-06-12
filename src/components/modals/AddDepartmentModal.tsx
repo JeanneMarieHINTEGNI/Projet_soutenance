@@ -1,16 +1,12 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-interface Department {
-  name: string;
-  budget: number;
-  headcount: number;
-  growthRate: number;
-  plannedPositions: number;
-}
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Department } from '@/types/payroll';
 
 interface AddDepartmentModalProps {
   isOpen: boolean;
@@ -19,118 +15,156 @@ interface AddDepartmentModalProps {
   initialDepartment?: Department;
 }
 
+const departmentFormSchema = z.object({
+  name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  budget: z.number().min(0, "Le budget ne peut pas être négatif"),
+  headcount: z.number().min(0, "L'effectif ne peut pas être négatif"),
+  plannedPositions: z.number().min(0, "Le nombre de postes prévus ne peut pas être négatif"),
+  growthRate: z.number().min(-100).max(100, "Le taux de croissance doit être entre -100 et 100")
+});
+
+type DepartmentFormValues = z.infer<typeof departmentFormSchema>;
+
 const AddDepartmentModal: React.FC<AddDepartmentModalProps> = ({
   isOpen,
   onClose,
   onAddDepartment,
   initialDepartment
 }) => {
-  const [formData, setFormData] = useState<Omit<Department, "id">>(
-    initialDepartment || {
-      name: "",
-      budget: 0,
-      headcount: 0,
-      growthRate: 0,
-      plannedPositions: 0
+  const form = useForm<DepartmentFormValues>({
+    resolver: zodResolver(departmentFormSchema),
+    defaultValues: {
+    name: initialDepartment?.name || '',
+    budget: initialDepartment?.budget || 0,
+    headcount: initialDepartment?.headcount || 0,
+      plannedPositions: initialDepartment?.plannedPositions || 0,
+      growthRate: initialDepartment?.growthRate || 0
     }
-  );
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAddDepartment(formData);
+  const onSubmit = (data: DepartmentFormValues) => {
+    onAddDepartment(data);
+    form.reset();
     onClose();
-  };
-
-  const handleChange = (field: keyof Department, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: field === "name" ? value : Number(value)
-    }));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {initialDepartment ? "Modifier le département" : "Nouveau département"}
+            {initialDepartment ? 'Modifier le département' : 'Ajouter un département'}
           </DialogTitle>
+          <DialogDescription>
+            {initialDepartment 
+              ? 'Modifier les informations du département'
+              : 'Remplissez les informations du nouveau département'
+            }
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nom du département</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="Ex: Marketing"
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nom du département</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nom du département" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budget mensuel (XOF)</Label>
+            <FormField
+              control={form.control}
+              name="budget"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Budget annuel</FormLabel>
+                  <FormControl>
             <Input
-              id="budget"
               type="number"
-              value={formData.budget}
-              onChange={(e) => handleChange("budget", e.target.value)}
-              placeholder="Ex: 1000000"
-              required
-              min="0"
+              placeholder="0"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="headcount">Effectif actuel</Label>
+          
+            <FormField
+              control={form.control}
+              name="headcount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Effectif actuel</FormLabel>
+                  <FormControl>
             <Input
-              id="headcount"
               type="number"
-              value={formData.headcount}
-              onChange={(e) => handleChange("headcount", e.target.value)}
-              placeholder="Ex: 5"
-              required
-              min="0"
+              placeholder="0"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="growthRate">Taux de croissance annuel (%)</Label>
+          
+            <FormField
+              control={form.control}
+              name="plannedPositions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Postes prévus</FormLabel>
+                  <FormControl>
             <Input
-              id="growthRate"
               type="number"
-              value={formData.growthRate}
-              onChange={(e) => handleChange("growthRate", e.target.value)}
-              placeholder="Ex: 5"
-              required
-              min="0"
-              step="0.1"
+              placeholder="0"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="plannedPositions">Postes prévus</Label>
+          
+            <FormField
+              control={form.control}
+              name="growthRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Taux de croissance (%)</FormLabel>
+                  <FormControl>
             <Input
-              id="plannedPositions"
               type="number"
-              value={formData.plannedPositions}
-              onChange={(e) => handleChange("plannedPositions", e.target.value)}
-              placeholder="Ex: 2"
-              required
-              min="0"
+              placeholder="0"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" type="button" onClick={onClose}>
               Annuler
             </Button>
             <Button type="submit">
-              {initialDepartment ? "Mettre à jour" : "Ajouter"}
+                {initialDepartment ? 'Mettre à jour' : 'Ajouter le département'}
             </Button>
-          </DialogFooter>
+            </div>
         </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
